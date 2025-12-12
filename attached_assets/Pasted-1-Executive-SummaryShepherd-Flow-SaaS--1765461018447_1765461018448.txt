@@ -1,0 +1,57 @@
+1. Executive SummaryShepherd Flow는 교회 청소년부 사역의 디지털 전환을 위한 프리미엄 구독형 SaaS입니다. 기존의 엑셀, 수기 장부, 단체 카톡방에 의존하던 비효율적인 행정 업무를 통합 관리 시스템으로 이관하여, 사역자가 행정이 아닌 '영혼 케어(Soul Care)'에 집중할 수 있도록 돕습니다.본 제품은 Mobile-First 전략을 통해 현장 교사들의 사용성을 극대화하며, Next.js 14와 Supabase 기반의 최신 기술 스택과 Glassmorphism 디자인을 적용하여 기존 교적 시스템의 낙후된 UI/UX 경험을 혁신합니다. MVP 단계에서는 학생/교사 관리, 목장(소그룹) 구성, 모바일 출석 체크, 주간 보고서 기능을 제공하여 사역 현장의 페인 포인트(Pain Point)를 즉각적으로 해결하는 것을 목표로 합니다.2. Product Overview2.1 비전 및 목표Vision: 모든 청소년부 사역자가 데이터 기반으로 학생을 이해하고 케어하는 환경 구축Mission: 주일 행정 업무 시간 80% 단축 및 출석 데이터의 자산화Target Market: 학생 수 50명 이상의 중/대형 교회 청소년부 (중등부, 고등부)2.2 타겟 사용자 페르소나관리자 (청소년부 담당 목사/전도사)Pain Point: 전체 출석 현황 파악이 어렵고, 연말 리포팅을 위해 엑셀 노가다를 해야 함.Needs: 한눈에 들어오는 대시보드, 교사들의 보고서 취합 자동화.사용자 (목장 담당 교사)Pain Point: 예배 후 정신없는 상황에서 종이 출석부를 챙겨야 하고, 보고서를 카톡으로 길게 작성해야 함.Needs: 폰으로 10초 만에 끝내는 출석 체크, 간편한 보고서 작성.2.3 성공 지표 (KPI)Primary Metric: 주간 활성 교사 비율 (WAU / 전체 등록 교사) - 목표 95% 이상Secondary Metric:주일 오후 2시 이전 출석 체크 완료율주간 보고서 제출율Business Metric: 유료 구독 전환율 (Trial to Paid), 이탈률 (Churn Rate)3. User Stories & Use Cases3.1 관리자 (Super Admin)IDUser StoryPriorityUS-A01관리자로서, 새 학기 시작 전 학생들을 일괄 등록하고 목장을 편성하고 싶다. 그래야 매년 반복되는 반 편성 업무 시간을 줄일 수 있기 때문이다.P0US-A02관리자로서, 전체 출석률 대시보드를 실시간으로 확인하고 싶다. 그래야 오늘 결석이 많은 목장을 파악하고 즉시 피드백할 수 있기 때문이다.P1US-A03관리자로서, 제출된 목장 보고서를 한 페이지에서 모아보고 싶다. 그래야 개별 카톡을 확인하는 번거로움을 없앨 수 있기 때문이다.P03.2 교사 (Teacher)IDUser StoryPriorityUS-T01교사로서, 스마트폰으로 내 목장 아이들의 출석을 처리하고 싶다. 그래야 공과 공부(소그룹 모임) 흐름을 끊지 않고 빠르게 행정을 마칠 수 있기 때문이다.P0US-T02교사로서, 결석한 학생의 사유를 메모해두고 싶다. 그래야 다음 주 심방(연락) 시 내용을 잊지 않고 케어할 수 있기 때문이다.P1US-T03교사로서, 지난주 우리 반 출석률 추이를 보고 싶다. 그래야 아이들에게 동기부여를 할 수 있기 때문이다.P23.3 주요 시나리오 (Sunday Flow)09:00: 교사는 교회 도착 시 모바일 앱(웹) 접속, 자동 로그인.11:00: 예배 및 공과 공부 시작. 교사는 '출석 체크' 탭 진입.11:05: 학생 목록에서 참석자 터치, 결석자 사유 선택(여행, 아픔 등) 후 '제출' 클릭. (confetti 애니메이션 발생)13:00: 귀가 후 PC 또는 모바일로 '목장 보고서' 작성. 금주 나눔 내용과 기도 제목 입력 후 제출.14:00: 담당 목사는 대시보드에서 전체 출석률 확인 및 미제출 교사에게 알림 발송(Future Feature).4. Functional Requirements4.1 사용자 및 권한 관리 (Auth & User Mgmt)FR-001 [회원가입/로그인]: Supabase Auth 연동 (Email, Social Login).FR-002 [역할 관리]: Super Admin(목사/부장), Teacher(교사) 구분. Admin은 교사를 초대하고 역할을 부여할 수 있다.FR-003 [프로필 관리]: 교사 본인의 정보 수정 및 담당 목장 확인.4.2 학생 및 목장 관리 (Core Data)FR-004 [학생 CRUD]:필수 정보: 이름, 생년월일, 학년, 학교, 연락처, 보호자 정보.상태값: ACTIVE(재적), REST(장기결석/휴식), GRADUATED(졸업).사진 업로드 기능 (Supabase Storage).FR-005 [목장(소그룹) 편성]:목장 생성/수정/삭제.Drag & Drop 인터페이스로 학생을 목장에 배정 (Admin Only).하나의 목장에 N명의 교사 배정 가능.4.3 출석 체크 시스템 (Attendance)FR-006 [출석부 UI]: 담당 목장의 학생 리스트 카드 형태 출력.FR-007 [상태 처리]:기본 상태: 미체크(Gray)클릭/터치 시 토글: 출석(Green) -> 지각(Yellow) -> 결석(Red) -> 사유결석(Blue).FR-008 [데이터 검증]: 미래 날짜 출석 체크 불가, 중복 제출 시 덮어쓰기 경고.4.4 목장 보고서 (Reporting)FR-009 [보고서 작성]:필드: 금주 출석 요약(자동 계산), 나눔 내용(Text Area), 기도 제목, 건의 사항.임시 저장 기능 (Local Storage 활용).FR-010 [보고서 조회]:교사: 본인이 작성한 내역만 조회.관리자: 날짜별/목장별 필터링하여 전체 조회 및 PDF 내보내기(추후).4.5 대시보드 (Analytics)FR-011 [Admin Dashboard]:주간 전체 출석률 (도넛 차트).지난 4주간 출석 추이 (라인 차트).목장별 출석 랭킹 (바 차트).FR-012 [Teacher Dashboard]:내 목장 출석률, 장기 결석자 알림 카드.5. Non-Functional RequirementsNFR-001 [Performance]: 모바일 네트워크(LTE/5G) 환경에서 초기 로딩(FCP) 1.5초 이내. API 응답 속도 200ms 이내.NFR-002 [Security]: 모든 개인정보(이름, 연락처)는 DB 저장 시 암호화(Encryption at Rest) 고려, 전송 구간 SSL 적용. RLS(Row Level Security)를 통해 본인 목장 외 데이터 접근 원천 차단.NFR-003 [Usability]: 모바일 중심 설계 (터치 타겟 44px 이상). 다크 모드/라이트 모드 자동 감지.NFR-004 [Scalability]: 단일 교회 기준 최대 학생 1,000명, 동시 접속(주일 오전) 100명 처리 가능 구조.6. UI/UX Specifications (Critical)6.1 Design Concept: "Ethereal Glass"Keywords: Clean, Modern, Spiritual, Deep.Primary Color: Violet-600 (#7c3aed) ~ Indigo-500 (#6366f1) 그라데이션.Background: 미세한 노이즈 텍스처가 깔린 짙은 배경(Dark Mode 기준) 위에 Glassmorphism 카드 배치.6.2 Key Screens Wireframe DescriptionLogin Screen:배경에 흐릿한 오로라 효과 애니메이션.중앙에 반투명 글래스 패널 로그인 폼.Mobile Home (Teacher View):상단: "안녕하세요, 이진수 선생님!" 문구와 현재 날짜.중단: [출석 체크하기] 대형 카드 버튼 (Pulse 애니메이션으로 유도).하단: 내 목장 요약 위젯 (이번 주 출석률 프리뷰).Bottom Tab Bar: 홈 / 학생목록 / 보고서 / 설정 (Floating Glass Style).Attendance Check Screen:학생 리스트가 카드 스택 혹은 리스트로 나열.Swipe Interaction: 우측 스와이프(출석), 좌측 스와이프(결석).모두 완료 시 폭죽(Confetti) 애니메이션과 함께 "수고하셨습니다!" 모달 팝업.6.3 Interactions버튼 호버 시 부드러운 Glow 효과.페이지 전환 시 Framer Motion을 활용한 Slide-in/Fade-in 효과.데이터 로딩 시 스켈레톤 UI (Skeleton UI) 필수 적용.7. Data Model (Simplified ERD)코드 스니펫erDiagram
+    USERS ||--o{ TEACHERS : "is linked to"
+    TEACHERS ||--o{ MOKJANG_TEACHERS : "manages"
+    MOKJANGS ||--o{ MOKJANG_TEACHERS : "has"
+    MOKJANGS ||--o{ STUDENTS : "contains"
+    STUDENTS ||--o{ ATTENDANCE_LOGS : "has"
+    MOKJANGS ||--o{ REPORTS : "generates"
+
+    USERS {
+        uuid id PK
+        string email
+        string role "admin|teacher"
+    }
+
+    TEACHERS {
+        uuid id PK
+        uuid user_id FK
+        string name
+        string phone
+        date started_at
+    }
+
+    MOKJANGS {
+        uuid id PK
+        string name
+        string description
+        string target_grade
+        boolean is_active
+    }
+    
+    STUDENTS {
+        uuid id PK
+        uuid mokjang_id FK
+        string name
+        date birth
+        string phone
+        string parent_phone
+        enum status "ACTIVE|REST|GRADUATED"
+    }
+
+    ATTENDANCE_LOGS {
+        uuid id PK
+        uuid student_id FK
+        date date
+        enum status "ATTENDED|LATE|ABSENT|EXCUSED"
+        text memo
+    }
+
+    REPORTS {
+        uuid id PK
+        uuid mokjang_id FK
+        uuid teacher_id FK
+        date date
+        text content
+        text prayer_request
+    }
+8. API Specifications (Overview)Base URL: /api/v1Authentication: Bearer Token (Supabase JWT)MethodEndpointDescriptionAccessGET/students?mokjang_id={id}특정 목장의 학생 목록 조회Teacher/AdminPOST/attendance/batch학생들의 출석 정보 일괄 저장Teacher/AdminGET/stats/weekly?date={date}해당 주차 전체 출석 통계AdminPOST/reports목장 보고서 생성Teacher/AdminGET/mokjangs/my로그인한 교사의 담당 목장 정보Teacher9. Release PlanPhase 1: MVP (개발 기간: 4주)목표: 기본적인 목장 구성 및 출석/보고서 기능의 정상 작동.범위:관리자: 교사/학생/목장 등록 (엑셀 업로드 미지원, 수동 입력).교사: 모바일 출석 체크, 텍스트 기반 보고서 작성.대시보드: 단순 출석률 % 표시.Phase 2: Enhanced Experience (개발 기간: +4주)목표: 데이터 시각화 및 사용자 편의성 증대.범위:학생 엑셀 일괄 업로드.대시보드 차트 고도화 (Recharts 적용).출석 체크 Swipe 인터랙션 구현.PDF 보고서 다운로드.Phase 3: Communication & Scale (Roadmap)푸시 알림 (보고서 제출 독촉, 공지사항).학부모용 알림톡 연동 (출석/귀가 알림).10. Appendix10.1 용어 정의목장 (Mokjang): 교회 내 소그룹(반)을 지칭하는 용어. (=Cell, 구역, 반)등반 (Deungban): 새신자가 정착 과정을 마치고 정식 목장에 배정되는 것.심방 (Simbang): 교사가 학생에게 연락하거나 찾아가서 케어하는 행위.10.2 참고 자료Shadcn/ui Components: https://ui.shadcn.com/Supabase Database Schema Guide.11. Next Steps이 PRD를 바탕으로 개발팀과 Kick-off 미팅을 진행하여 DB 스키마 상세 리뷰 및 UI 컴포넌트 라이브러리 선정을 진행해야 합니다.
