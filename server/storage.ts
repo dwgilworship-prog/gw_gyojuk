@@ -1,6 +1,6 @@
-import { 
+import {
   users, teachers, mokjangs, mokjangTeachers, students, attendanceLogs, reports, longAbsenceContacts,
-  type User, type InsertUser, 
+  type User, type InsertUser,
   type Teacher, type InsertTeacher,
   type Mokjang, type InsertMokjang,
   type MokjangTeacher, type InsertMokjangTeacher,
@@ -77,7 +77,7 @@ export class DatabaseStorage implements IStorage {
   sessionStore: session.Store;
 
   constructor() {
-    this.sessionStore = new PostgresSessionStore({ pool, createTableIfMissing: true });
+    this.sessionStore = new PostgresSessionStore({ pool, createTableIfMissing: false });
   }
 
   async getUser(id: string): Promise<User | undefined> {
@@ -175,7 +175,7 @@ export class DatabaseStorage implements IStorage {
   async assignTeacherToMokjang(mokjangId: string, teacherId: string): Promise<MokjangTeacher> {
     const existing = await db.select().from(mokjangTeachers)
       .where(and(eq(mokjangTeachers.mokjangId, mokjangId), eq(mokjangTeachers.teacherId, teacherId)));
-    
+
     if (existing.length > 0) {
       return existing[0];
     }
@@ -239,7 +239,7 @@ export class DatabaseStorage implements IStorage {
   async getAttendanceByDateAndMokjang(date: string, mokjangId: string): Promise<AttendanceLog[]> {
     const studentIds = await db.select({ id: students.id }).from(students).where(eq(students.mokjangId, mokjangId));
     if (studentIds.length === 0) return [];
-    
+
     const ids = studentIds.map(s => s.id);
     return await db.select().from(attendanceLogs)
       .where(and(
@@ -263,7 +263,7 @@ export class DatabaseStorage implements IStorage {
 
   async saveAttendance(logs: InsertAttendanceLog[]): Promise<AttendanceLog[]> {
     if (logs.length === 0) return [];
-    
+
     const results: AttendanceLog[] = [];
     for (const log of logs) {
       const existing = await db.select().from(attendanceLogs)
@@ -271,7 +271,7 @@ export class DatabaseStorage implements IStorage {
           eq(attendanceLogs.studentId, log.studentId),
           eq(attendanceLogs.date, log.date)
         ));
-      
+
       if (existing.length > 0) {
         const [updated] = await db.update(attendanceLogs)
           .set({ status: log.status, memo: log.memo, updatedAt: new Date() })
@@ -340,7 +340,7 @@ export class DatabaseStorage implements IStorage {
     const startOfWeek = new Date(now);
     startOfWeek.setDate(now.getDate() - now.getDay());
     startOfWeek.setHours(0, 0, 0, 0);
-    
+
     const endOfWeek = new Date(startOfWeek);
     endOfWeek.setDate(startOfWeek.getDate() + 6);
     endOfWeek.setHours(23, 59, 59, 999);
