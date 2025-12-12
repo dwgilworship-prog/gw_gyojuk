@@ -53,10 +53,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import { 
-  Plus, Users, Search, Pencil, Trash2, Phone, User, Droplet, Calendar, 
+import {
+  Plus, Users, Search, Pencil, Trash2, Phone, User, Droplet, Calendar,
   GraduationCap, Home, ChevronUp, ChevronDown, ChevronsUpDown,
-  LayoutGrid, LayoutList, ChevronLeft, ChevronRight
+  LayoutGrid, LayoutList, ChevronLeft, ChevronRight, MoreVertical
 } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -112,20 +112,20 @@ export default function Students() {
   const [editingStudent, setEditingStudent] = useState<Student | null>(null);
   const [deletingStudent, setDeletingStudent] = useState<Student | null>(null);
   const [viewingStudent, setViewingStudent] = useState<Student | null>(null);
-  
+
   const [gradeFilter, setGradeFilter] = useState<string>("all");
   const [mokjangFilter, setMokjangFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
-  
+
   const [sortField, setSortField] = useState<SortField>("name");
   const [sortOrder, setSortOrder] = useState<SortOrder>("asc");
-  
+
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [viewMode, setViewMode] = useState<"table" | "card">("table");
-  
+
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
-  
+
   const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
 
   const { data: students, isLoading } = useQuery<Student[]>({
@@ -345,13 +345,13 @@ export default function Students() {
     if (!students) return [];
 
     let result = students.filter((student) => {
-      const matchesSearch = 
+      const matchesSearch =
         student.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         student.school?.toLowerCase().includes(searchQuery.toLowerCase());
-      
+
       const matchesGrade = gradeFilter === "all" || student.grade === gradeFilter;
-      const matchesMokjang = 
-        mokjangFilter === "all" || 
+      const matchesMokjang =
+        mokjangFilter === "all" ||
         (mokjangFilter === "unassigned" ? !student.mokjangId : student.mokjangId === mokjangFilter);
       const matchesStatus = statusFilter === "all" || student.status === statusFilter;
 
@@ -406,17 +406,17 @@ export default function Students() {
 
   const handleBulkMokjangAssign = (mokjangId: string) => {
     const ids = Array.from(selectedIds);
-    bulkUpdateMutation.mutate({ 
-      ids, 
-      data: { mokjangId: mokjangId === "none" ? undefined : mokjangId } 
+    bulkUpdateMutation.mutate({
+      ids,
+      data: { mokjangId: mokjangId === "none" ? undefined : mokjangId }
     });
   };
 
   const handleBulkStatusChange = (status: string) => {
     const ids = Array.from(selectedIds);
-    bulkUpdateMutation.mutate({ 
-      ids, 
-      data: { status: status as "ACTIVE" | "REST" | "GRADUATED" } 
+    bulkUpdateMutation.mutate({
+      ids,
+      data: { status: status as "ACTIVE" | "REST" | "GRADUATED" }
     });
   };
 
@@ -520,7 +520,8 @@ export default function Students() {
           </Card>
         ) : filteredAndSortedStudents.length > 0 ? (
           <>
-            {viewMode === "table" ? (
+            {/* Desktop Table View */}
+            <div className={`hidden md:block ${viewMode === "card" ? "md:hidden" : ""}`}>
               <Card>
                 <CardContent className="p-0">
                   <div className="overflow-x-auto">
@@ -534,7 +535,7 @@ export default function Students() {
                               data-testid="checkbox-select-all"
                             />
                           </TableHead>
-                          <TableHead 
+                          <TableHead
                             className="cursor-pointer"
                             onClick={() => handleSort("name")}
                             data-testid="sort-name"
@@ -543,7 +544,7 @@ export default function Students() {
                               이름 {getSortIcon("name")}
                             </div>
                           </TableHead>
-                          <TableHead 
+                          <TableHead
                             className="cursor-pointer"
                             onClick={() => handleSort("grade")}
                             data-testid="sort-grade"
@@ -556,7 +557,7 @@ export default function Students() {
                           <TableHead>목장</TableHead>
                           <TableHead className="hidden lg:table-cell">담당교사</TableHead>
                           <TableHead className="hidden md:table-cell">연락처</TableHead>
-                          <TableHead 
+                          <TableHead
                             className="cursor-pointer"
                             onClick={() => handleSort("status")}
                             data-testid="sort-status"
@@ -570,7 +571,7 @@ export default function Students() {
                       </TableHeader>
                       <TableBody>
                         {paginatedStudents.map((student) => (
-                          <TableRow 
+                          <TableRow
                             key={student.id}
                             className="cursor-pointer"
                             data-testid={`row-student-${student.id}`}
@@ -582,7 +583,7 @@ export default function Students() {
                                 data-testid={`checkbox-student-${student.id}`}
                               />
                             </TableCell>
-                            <TableCell 
+                            <TableCell
                               className="font-medium"
                               onClick={() => setViewingStudent(student)}
                               data-testid={`text-student-name-${student.id}`}
@@ -654,59 +655,88 @@ export default function Students() {
                   </div>
                 </CardContent>
               </Card>
-            ) : (
-              <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
-                {paginatedStudents.map((student) => (
-                  <Card key={student.id} data-testid={`card-student-${student.id}`}>
-                    <CardContent className="p-4">
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="flex items-start gap-3">
-                          <Checkbox
-                            checked={selectedIds.has(student.id)}
-                            onCheckedChange={(checked) => handleSelectOne(student.id, !!checked)}
-                            className="mt-1"
-                          />
-                          <div
-                            className="min-w-0 flex-1 cursor-pointer"
-                            onClick={() => setViewingStudent(student)}
-                          >
-                            <div className="flex items-center gap-2 mb-1">
-                              <h3 className="font-medium truncate" data-testid={`text-student-name-${student.id}`}>
-                                {student.name}
-                              </h3>
-                              <Badge variant={statusLabels[student.status].variant} className="text-xs flex-shrink-0">
-                                {statusLabels[student.status].label}
-                              </Badge>
-                            </div>
-                            <div className="text-sm text-muted-foreground space-y-0.5">
-                              {student.school && student.grade && (
-                                <p className="truncate">{student.school} {student.grade}</p>
-                              )}
-                              {getMokjangName(student.mokjangId) && (
-                                <p className="truncate text-xs">{getMokjangName(student.mokjangId)}</p>
-                              )}
-                            </div>
+            </div>
+
+            {/* Mobile/Card View */}
+            <div className={`grid gap-3 md:grid-cols-2 lg:grid-cols-3 ${viewMode === "table" ? "md:hidden" : ""}`}>
+              {paginatedStudents.map((student) => (
+                <Card key={student.id} data-testid={`card-student-${student.id}`}>
+                  <CardContent className="p-4">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex items-start gap-3 flex-1 min-w-0">
+                        <Checkbox
+                          checked={selectedIds.has(student.id)}
+                          onCheckedChange={(checked) => handleSelectOne(student.id, !!checked)}
+                          className="mt-1"
+                        />
+                        <div
+                          className="min-w-0 flex-1 cursor-pointer"
+                          onClick={() => setViewingStudent(student)}
+                        >
+                          <div className="flex items-center gap-2 mb-1">
+                            <h3 className="font-medium truncate text-base" data-testid={`text-student-name-${student.id}`}>
+                              {student.name}
+                            </h3>
+                            <Badge variant={statusLabels[student.status].variant} className="text-xs flex-shrink-0">
+                              {statusLabels[student.status].label}
+                            </Badge>
+                          </div>
+                          <div className="text-sm text-muted-foreground space-y-1">
+                            {student.school && student.grade && (
+                              <div className="flex items-center gap-2">
+                                <GraduationCap className="h-3 w-3" />
+                                <span className="truncate">{student.school} {student.grade}</span>
+                              </div>
+                            )}
+                            {getMokjangName(student.mokjangId) && (
+                              <div className="flex items-center gap-2">
+                                <Users className="h-3 w-3" />
+                                <span className="truncate">{getMokjangName(student.mokjangId)}</span>
+                              </div>
+                            )}
+                            {student.phone && (
+                              <div className="flex items-center gap-2">
+                                <Phone className="h-3 w-3" />
+                                <span>{maskPhone(student.phone)}</span>
+                              </div>
+                            )}
                           </div>
                         </div>
-                        <div className="flex items-center gap-1 flex-shrink-0">
-                          {student.phone && (
-                            <Button
-                              size="icon"
-                              variant="ghost"
-                              asChild
-                            >
-                              <a href={`tel:${student.phone}`}>
-                                <Phone className="h-4 w-4" />
-                              </a>
-                            </Button>
-                          )}
-                        </div>
                       </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            )}
+                      <div className="flex flex-col gap-1 flex-shrink-0">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button size="icon" variant="ghost" className="h-8 w-8">
+                              <MoreVertical className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            {student.phone && (
+                              <DropdownMenuItem asChild>
+                                <a href={`tel:${student.phone}`} className="flex items-center w-full">
+                                  <Phone className="h-4 w-4 mr-2" />
+                                  전화걸기
+                                </a>
+                              </DropdownMenuItem>
+                            )}
+                            <DropdownMenuItem onClick={() => handleOpenEdit(student)}>
+                              <Pencil className="h-4 w-4 mr-2" />
+                              수정
+                            </DropdownMenuItem>
+                            {user?.role === "admin" && (
+                              <DropdownMenuItem onClick={() => setDeletingStudent(student)} className="text-destructive">
+                                <Trash2 className="h-4 w-4 mr-2" />
+                                삭제
+                              </DropdownMenuItem>
+                            )}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
 
             {isSomeSelected && (
               <Card className="sticky bottom-20 md:bottom-4 z-10 border-primary">
@@ -752,8 +782,8 @@ export default function Students() {
                       </DropdownMenu>
 
                       {user?.role === "admin" && (
-                        <Button 
-                          variant="destructive" 
+                        <Button
+                          variant="destructive"
                           size="sm"
                           onClick={() => setBulkDeleteOpen(true)}
                           data-testid="button-bulk-delete"
@@ -814,8 +844,8 @@ export default function Students() {
             <CardContent className="flex flex-col items-center justify-center py-12">
               <Users className="h-12 w-12 text-muted-foreground/50 mb-4" />
               <p className="text-muted-foreground text-center">
-                {searchQuery || gradeFilter !== "all" || mokjangFilter !== "all" || statusFilter !== "all" 
-                  ? "검색 결과가 없습니다." 
+                {searchQuery || gradeFilter !== "all" || mokjangFilter !== "all" || statusFilter !== "all"
+                  ? "검색 결과가 없습니다."
                   : "등록된 학생이 없습니다."}
               </p>
               {!searchQuery && gradeFilter === "all" && mokjangFilter === "all" && statusFilter === "all" && (
