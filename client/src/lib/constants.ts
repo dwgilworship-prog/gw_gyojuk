@@ -1,5 +1,5 @@
-export const APP_NAME = "Shepherd Flow";
-export const APP_DESCRIPTION = "교회 청소년부 사역 관리 플랫폼";
+export const APP_NAME = "GIL WORSHIP";
+export const APP_DESCRIPTION = "청소년부 사역 관리 플랫폼";
 
 export const STUDENT_STATUS = {
   ACTIVE: { label: "재적", color: "success" },
@@ -43,7 +43,7 @@ export const MOBILE_TAB_ITEMS = [
 
 export const GRADES = [
   "중1",
-  "중2", 
+  "중2",
   "중3",
   "고1",
   "고2",

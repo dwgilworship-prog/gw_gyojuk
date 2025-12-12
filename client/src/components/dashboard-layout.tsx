@@ -29,7 +29,7 @@ export function DashboardLayout({ children, title }: DashboardLayoutProps) {
               <SidebarTrigger data-testid="button-sidebar-toggle" />
               <div className="flex items-center gap-3 md:hidden">
                 <div className="w-8 h-8 rounded-lg bg-gradient-violet-indigo flex items-center justify-center">
-                  <span className="text-xs font-bold text-white">SF</span>
+                  <span className="text-xs font-bold text-white">GW</span>
                 </div>
               </div>
               {title && (

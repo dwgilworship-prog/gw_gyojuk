@@ -55,10 +55,10 @@ export function AppSidebar() {
       <SidebarHeader className="p-4">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-gradient-violet-indigo flex items-center justify-center flex-shrink-0">
-            <span className="text-sm font-bold text-white">SF</span>
+            <span className="text-sm font-bold text-white">GW</span>
           </div>
           <div className="flex flex-col min-w-0">
-            <span className="font-semibold text-sm truncate">Shepherd Flow</span>
+            <span className="font-semibold text-sm truncate">GIL WORSHIP</span>
             <span className="text-xs text-muted-foreground truncate">
               {user?.role === "admin" ? "관리자" : "교사"}
             </span>

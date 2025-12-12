@@ -68,10 +68,10 @@ export default function AuthPage() {
         <Card className="w-full max-w-md border-0 shadow-none lg:shadow-sm lg:border">
           <CardHeader className="text-center pb-2">
             <div className="mx-auto mb-4 w-14 h-14 rounded-2xl bg-gradient-violet-indigo flex items-center justify-center">
-              <span className="text-xl font-bold text-white">SF</span>
+              <span className="text-xl font-bold text-white">GW</span>
             </div>
-            <CardTitle className="text-2xl">Shepherd Flow</CardTitle>
-            <CardDescription>교회 청소년부 사역 관리 플랫폼</CardDescription>
+            <CardTitle className="text-2xl">GIL WORSHIP</CardTitle>
+            <CardDescription>청소년부 사역 관리 플랫폼</CardDescription>
           </CardHeader>
           <CardContent>
             <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "login" | "register")}>
@@ -210,7 +210,7 @@ export default function AuthPage() {
         <div className="max-w-md text-white space-y-6">
           <h1 className="text-4xl font-bold">목자의 마음으로</h1>
           <p className="text-lg text-white/90 leading-relaxed">
-            Shepherd Flow는 교회 청소년부 사역을 위한 통합 관리 플랫폼입니다.
+            GIL Worship 사역을 위한 통합 관리 플랫폼입니다.
             출석 체크, 학생 관리, 목장 운영, 보고서 작성까지
             사역에 필요한 모든 것을 한 곳에서 관리하세요.
           </p>
