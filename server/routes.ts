@@ -38,37 +38,40 @@ export async function registerRoutes(
   });
 
   app.post("/api/teachers", async (req, res) => {
+    // Force reload comment
     if (!req.isAuthenticated()) return res.sendStatus(401);
     const user = req.user!;
     if (user.role !== "admin") return res.sendStatus(403);
-    
-    const { email, name, phone, startedAt } = req.body;
-    
+
+    const { email, name, phone, birth, startedAt } = req.body;
+    console.log("[DEBUG] /api/teachers POST body:", { email, name, birth });
+
     if (!email) {
       return res.status(400).json({ message: "이메일은 필수입니다." });
     }
-    
+
     const existingUser = await storage.getUserByEmail(email);
     if (existingUser) {
       return res.status(400).json({ message: "이미 사용 중인 이메일입니다." });
     }
-    
+
     const defaultPassword = "shepherd1234";
     const hashedPassword = await hashPassword(defaultPassword);
-    
+
     const newUser = await storage.createUser({
       email,
       password: hashedPassword,
       role: "teacher",
     });
-    
+
     const teacher = await storage.createTeacher({
       userId: newUser.id,
       name,
       phone: phone || null,
+      birth: birth || null,
       startedAt: startedAt || null,
     });
-    
+
     res.status(201).json(teacher);
   });
 
@@ -269,11 +272,11 @@ export async function registerRoutes(
 
   app.get("/api/dashboard-widgets", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
-    
+
     const allStudents = await storage.getStudents();
     const activeStudents = allStudents.filter(s => s.status === "ACTIVE");
     const mokjangs = await storage.getMokjangs();
-    
+
     const now = new Date();
     const longAbsenceResults = await Promise.all(activeStudents.map(async (student) => {
       const lastAttendance = await storage.getStudentLastAttendance(student.id);
@@ -289,25 +292,53 @@ export async function registerRoutes(
       .filter(r => r.weeksAbsent >= 4)
       .sort((a, b) => b.weeksAbsent - a.weeksAbsent)
       .slice(0, 5);
-    
+
     const startOfWeek = new Date(now);
     startOfWeek.setDate(now.getDate() - now.getDay());
     startOfWeek.setHours(0, 0, 0, 0);
     const endOfWeek = new Date(startOfWeek);
     endOfWeek.setDate(startOfWeek.getDate() + 6);
-    
-    const birthdays = activeStudents.filter(student => {
+
+    const teachers = await storage.getTeachers();
+    const activeTeachers = teachers.filter(t => t.status === "active");
+
+    const studentBirthdays = activeStudents.filter(student => {
       if (!student.birth) return false;
       const birthDate = new Date(student.birth);
       const thisYearBirthday = new Date(now.getFullYear(), birthDate.getMonth(), birthDate.getDate());
       return thisYearBirthday >= startOfWeek && thisYearBirthday <= endOfWeek;
     }).map(student => ({
-      student,
-      mokjangName: mokjangs.find(m => m.id === student.mokjangId)?.name || "미배정",
+      id: student.id,
+      name: student.name,
+      birth: student.birth,
+      type: "student" as const,
+      info: mokjangs.find(m => m.id === student.mokjangId)?.name || "미배정",
     }));
-    
+
+    const teacherBirthdays = activeTeachers.filter(teacher => {
+      if (!teacher.birth) return false;
+      const birthDate = new Date(teacher.birth);
+      const thisYearBirthday = new Date(now.getFullYear(), birthDate.getMonth(), birthDate.getDate());
+      return thisYearBirthday >= startOfWeek && thisYearBirthday <= endOfWeek;
+    }).map(teacher => ({
+      id: teacher.id,
+      name: teacher.name,
+      birth: teacher.birth,
+      type: "teacher" as const,
+      info: "교사",
+    }));
+
+    const birthdays = [...studentBirthdays, ...teacherBirthdays].sort((a, b) => {
+      const dateA = new Date(a.birth!);
+      const dateB = new Date(b.birth!);
+      // Compare by month and day only (ignoring year)
+      const monthDiff = dateA.getMonth() - dateB.getMonth();
+      if (monthDiff !== 0) return monthDiff;
+      return dateA.getDate() - dateB.getDate();
+    });
+
     const unassignedStudents = activeStudents.filter(s => !s.mokjangId);
-    
+
     res.json({
       longAbsenceStudents,
       birthdays,
@@ -319,10 +350,10 @@ export async function registerRoutes(
     if (!req.isAuthenticated()) return res.sendStatus(401);
     const user = req.user!;
     if (user.role !== "admin") return res.sendStatus(403);
-    
+
     const allStudents = await storage.getStudents();
     const activeStudents = allStudents.filter(s => s.status === "ACTIVE");
-    
+
     const now = new Date();
     const results = await Promise.all(activeStudents.map(async (student) => {
       const lastAttendance = await storage.getStudentLastAttendance(student.id);
@@ -334,10 +365,10 @@ export async function registerRoutes(
       const weeksAbsent = Math.floor(diffDays / 7);
       return { student, weeksAbsent, lastAttendanceDate: lastAttendance.date };
     }));
-    
+
     const longAbsenceStudents = results.filter(r => r.weeksAbsent >= 2);
     longAbsenceStudents.sort((a, b) => b.weeksAbsent - a.weeksAbsent);
-    
+
     res.json(longAbsenceStudents);
   });
 

@@ -62,6 +62,7 @@ app.use((req, res, next) => {
 });
 
 (async () => {
+  // Register routes and start server
   await registerRoutes(httpServer, app);
   await seedDatabase();
 

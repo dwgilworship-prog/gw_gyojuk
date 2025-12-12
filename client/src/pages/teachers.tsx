@@ -46,7 +46,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Plus, UserCog, Search, Pencil, Trash2, Phone, Calendar, Crown } from "lucide-react";
+import { Plus, UserCog, Search, Pencil, Trash2, Phone, Calendar, Crown, Cake } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -59,6 +59,7 @@ const teacherFormSchema = z.object({
   email: z.string().optional(),
   name: z.string().min(1, "이름을 입력해주세요"),
   phone: z.string().optional(),
+  birth: z.string().optional(),
   startedAt: z.string().optional(),
   status: z.enum(["active", "rest", "resigned"]).default("active"),
 });
@@ -79,7 +80,7 @@ export default function Teachers() {
   const [editingTeacher, setEditingTeacher] = useState<Teacher | null>(null);
   const [deletingTeacher, setDeletingTeacher] = useState<Teacher | null>(null);
   const [viewingTeacher, setViewingTeacher] = useState<Teacher | null>(null);
-  
+
   const [roleFilter, setRoleFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
 
@@ -109,6 +110,7 @@ export default function Teachers() {
       email: "",
       name: "",
       phone: "",
+      birth: "",
       startedAt: "",
       status: "active",
     },
@@ -120,6 +122,7 @@ export default function Teachers() {
         email: data.email,
         name: data.name,
         phone: data.phone || null,
+        birth: data.birth || null,
         startedAt: data.startedAt || null,
         status: data.status || "active",
       };
@@ -141,6 +144,7 @@ export default function Teachers() {
       const payload = {
         name: data.name,
         phone: data.phone || null,
+        birth: data.birth || null,
         startedAt: data.startedAt || null,
         status: data.status || "active",
       };
@@ -177,6 +181,7 @@ export default function Teachers() {
       email: "",
       name: "",
       phone: "",
+      birth: "",
       startedAt: "",
       status: "active",
     });
@@ -189,6 +194,7 @@ export default function Teachers() {
       email: "",
       name: teacher.name,
       phone: teacher.phone || "",
+      birth: teacher.birth || "",
       startedAt: teacher.startedAt || "",
       status: teacher.status || "active",
     });
@@ -254,10 +260,10 @@ export default function Teachers() {
     if (!teachers) return [];
 
     return teachers.filter((teacher) => {
-      const matchesSearch = 
+      const matchesSearch =
         teacher.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         teacher.phone?.toLowerCase().includes(searchQuery.toLowerCase());
-      
+
       const role = getTeacherRole(teacher);
       const matchesRole = roleFilter === "all" || role === roleFilter;
       const matchesStatus = statusFilter === "all" || teacher.status === statusFilter;
@@ -348,7 +354,7 @@ export default function Teachers() {
                       const studentCount = getStudentCountForTeacher(teacher.id);
 
                       return (
-                        <TableRow 
+                        <TableRow
                           key={teacher.id}
                           className="cursor-pointer"
                           onClick={() => setViewingTeacher(teacher)}
@@ -445,11 +451,11 @@ export default function Teachers() {
                     <FormItem>
                       <FormLabel>이메일 *</FormLabel>
                       <FormControl>
-                        <Input 
-                          type="email" 
-                          placeholder="teacher@example.com" 
-                          {...field} 
-                          data-testid="input-teacher-email" 
+                        <Input
+                          type="email"
+                          placeholder="teacher@example.com"
+                          {...field}
+                          data-testid="input-teacher-email"
                         />
                       </FormControl>
                       <FormMessage />
@@ -460,7 +466,7 @@ export default function Teachers() {
                   )}
                 />
               )}
-              
+
               <FormField
                 control={form.control}
                 name="name"
@@ -490,6 +496,20 @@ export default function Teachers() {
               />
 
               <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="birth"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>생년월일</FormLabel>
+                      <FormControl>
+                        <Input type="date" {...field} data-testid="input-teacher-birth" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
                 <FormField
                   control={form.control}
                   name="startedAt"
@@ -601,6 +621,12 @@ export default function Teachers() {
                         <Phone className="h-4 w-4" />
                       </a>
                     </Button>
+                  </div>
+                )}
+                {viewingTeacher.birth && (
+                  <div className="flex items-center gap-2">
+                    <Cake className="h-4 w-4 text-pink-500" />
+                    <span>{formatDate(viewingTeacher.birth)} 생일</span>
                   </div>
                 )}
                 {viewingTeacher.startedAt && (

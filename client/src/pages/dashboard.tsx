@@ -27,14 +27,17 @@ interface LongAbsenceStudent {
   lastAttendanceDate: string | null;
 }
 
-interface BirthdayStudent {
-  student: Student;
-  mokjangName: string;
+interface BirthdayPerson {
+  id: string;
+  name: string;
+  birth: string | null;
+  type: "student" | "teacher";
+  info: string;
 }
 
 interface DashboardWidgets {
   longAbsenceStudents: LongAbsenceStudent[];
-  birthdays: BirthdayStudent[];
+  birthdays: BirthdayPerson[];
   unassignedCount: number;
 }
 
@@ -182,18 +185,23 @@ export default function Dashboard() {
                   </div>
                 ) : widgets?.birthdays && widgets.birthdays.length > 0 ? (
                   <div className="space-y-2">
-                    {widgets.birthdays.map((item) => (
-                      <div key={item.student.id} className="text-sm flex items-center gap-2">
-                        <span className="text-muted-foreground">-</span>
-                        <span className="text-pink-500 font-medium">
-                          {item.student.birth ? format(new Date(item.student.birth), "M/d (E)", { locale: ko }) : ""}
-                        </span>
-                        <span>{item.student.name}</span>
-                        {item.student.grade && (
-                          <span className="text-muted-foreground">({item.student.grade})</span>
-                        )}
-                      </div>
-                    ))}
+                    {widgets.birthdays.map((item: any) => {
+                      // Fallback for legacy API response format during server reload
+                      const name = item.name || item.student?.name;
+                      const birth = item.birth || item.student?.birth;
+                      const info = item.info || (item.student ? (item.student.grade ? `(${item.student.grade})` : "") : "");
+
+                      return (
+                        <div key={item.id || item.student?.id} className="text-sm flex items-center gap-2">
+                          <span className="text-muted-foreground">-</span>
+                          <span className="text-pink-500 font-medium">
+                            {birth ? format(new Date(birth), "M/d (E)", { locale: ko }) : ""}
+                          </span>
+                          <span>{name}</span>
+                          {info && <span className="text-muted-foreground">({info})</span>}
+                        </div>
+                      );
+                    })}
                   </div>
                 ) : (
                   <p className="text-sm text-muted-foreground" data-testid="text-no-birthdays">

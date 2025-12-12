@@ -33,6 +33,7 @@ export const teachers = pgTable("teachers", {
   userId: varchar("user_id", { length: 36 }).references(() => users.id, { onDelete: "cascade" }),
   name: text("name").notNull(),
   phone: text("phone"),
+  birth: date("birth"),
   startedAt: date("started_at"),
   status: teacherStatusEnum("status").notNull().default("active"),
   createdAt: timestamp("created_at").defaultNow(),

@@ -132,7 +132,12 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteTeacher(id: string): Promise<boolean> {
-    const result = await db.delete(teachers).where(eq(teachers.id, id));
+    const teacher = await this.getTeacher(id);
+    if (!teacher || !teacher.userId) return false;
+
+    // Delete the user, which will cascade delete the teacher due to foreign key constraint
+    console.log(`[DEBUG] Deleting user ${teacher.userId} for teacher ${id}`);
+    const result = await db.delete(users).where(eq(users.id, teacher.userId));
     return (result.rowCount ?? 0) > 0;
   }
 
