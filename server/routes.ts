@@ -298,7 +298,7 @@ export async function registerRoutes(
       return { student, weeksAbsent, lastAttendanceDate: lastAttendance.date };
     }));
     const longAbsenceStudents = longAbsenceResults
-      .filter(r => r.weeksAbsent >= 4)
+      .filter(r => r.weeksAbsent >= 4 && r.weeksAbsent !== 999) // 출석 기록 없는 학생 제외
       .sort((a, b) => b.weeksAbsent - a.weeksAbsent)
       .slice(0, 5);
 
@@ -375,7 +375,7 @@ export async function registerRoutes(
       return { student, weeksAbsent, lastAttendanceDate: lastAttendance.date };
     }));
 
-    const longAbsenceStudents = results.filter(r => r.weeksAbsent >= 2);
+    const longAbsenceStudents = results.filter(r => r.weeksAbsent >= 2 && r.weeksAbsent !== 999); // 출석 기록 없는 학생 제외
     longAbsenceStudents.sort((a, b) => b.weeksAbsent - a.weeksAbsent);
 
     res.json(longAbsenceStudents);
