@@ -16,23 +16,28 @@ import { Button } from "@/components/ui/button";
 import {
   LayoutDashboard,
   Users,
-  UserCog,
+  Settings,
+  PieChart,
+  ClipboardCheck,
+  Building,
+  AlertTriangle,
+  Mail,
   BookOpen,
   UserCheck,
-  AlertTriangle,
   BarChart3,
   LogOut,
+  UserCog,
 } from "lucide-react";
 
 const adminMenuItems = [
   { title: "대시보드", url: "/", icon: LayoutDashboard },
   { title: "학생 관리", url: "/students", icon: Users },
-  { title: "교사 관리", url: "/teachers", icon: UserCog },
   { title: "목장 관리", url: "/mokjangs", icon: BookOpen },
   { title: "출석 체크", url: "/attendance", icon: UserCheck },
   { title: "장기결석자", url: "/long-absence", icon: AlertTriangle },
   { title: "사역부서", url: "/ministries", icon: Users },
   { title: "통계/리포트", url: "/stats", icon: BarChart3 },
+  { title: "문자 발송", url: "/sms", icon: Mail },
 ];
 
 const teacherMenuItems = [
