@@ -65,7 +65,6 @@ import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import type { Student, Mokjang, Teacher, MokjangTeacher, Ministry, MinistryStudent } from "@shared/schema";
 import { useAuth } from "@/hooks/use-auth";
-import { id } from "date-fns/locale";
 
 const studentFormSchema = z.object({
   name: z.string().min(1, "이름을 입력해주세요"),
@@ -199,6 +198,7 @@ export default function Students() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/students"] });
       queryClient.invalidateQueries({ queryKey: ["/api/stats"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/dashboard-widgets"] });
       toast({ title: "학생이 등록되었습니다." });
       handleCloseForm();
     },
@@ -242,6 +242,7 @@ export default function Students() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/students"] });
       queryClient.invalidateQueries({ queryKey: ["/api/ministry-members"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/dashboard-widgets"] });
       toast({ title: "학생 정보가 수정되었습니다." });
       handleCloseForm();
     },
@@ -257,6 +258,7 @@ export default function Students() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/students"] });
       queryClient.invalidateQueries({ queryKey: ["/api/stats"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/dashboard-widgets"] });
       toast({ title: "학생이 삭제되었습니다." });
       setDeletingStudent(null);
     },
@@ -272,6 +274,7 @@ export default function Students() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/students"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/dashboard-widgets"] });
       toast({ title: "선택된 학생들이 수정되었습니다." });
       setSelectedIds(new Set());
     },
@@ -288,6 +291,7 @@ export default function Students() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/students"] });
       queryClient.invalidateQueries({ queryKey: ["/api/stats"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/dashboard-widgets"] });
       toast({ title: "선택된 학생들이 삭제되었습니다." });
       setSelectedIds(new Set());
       setBulkDeleteOpen(false);
@@ -431,7 +435,7 @@ export default function Students() {
     });
 
     return result;
-  }, [students, searchQuery, gradeFilter, mokjangFilter, statusFilter, sortField, sortOrder]);
+  }, [students, searchQuery, gradeFilter, mokjangFilter, statusFilter, ministryFilter, ministryMembers, sortField, sortOrder]);
 
   const totalPages = Math.ceil(filteredAndSortedStudents.length / pageSize);
   const paginatedStudents = filteredAndSortedStudents.slice(

@@ -5,15 +5,6 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Badge } from "@/components/ui/badge";
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from "@/components/ui/table";
 import {
     Dialog,
     DialogContent,
@@ -40,7 +31,7 @@ import {
     FormMessage,
 } from "@/components/ui/form";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Plus, Pencil, Trash2, Users, Search } from "lucide-react";
+import { Plus, Pencil, Trash2, Users, Search, Phone, GraduationCap, User } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -63,6 +54,7 @@ export default function Ministries() {
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [editingMinistry, setEditingMinistry] = useState<Ministry | null>(null);
     const [deletingMinistry, setDeletingMinistry] = useState<Ministry | null>(null);
+    const [viewingMinistry, setViewingMinistry] = useState<Ministry | null>(null);
 
     // Queries
     const { data: ministries, isLoading } = useQuery<Ministry[]>({
@@ -180,6 +172,22 @@ export default function Ministries() {
         return { teacherCount, studentCount };
     };
 
+    const getMinistryTeachers = (ministryId: string) => {
+        if (!ministryMembers || !teachers) return [];
+        const teacherIds = ministryMembers.teachers
+            .filter(m => m.ministryId === ministryId)
+            .map(m => m.teacherId);
+        return teachers.filter(t => teacherIds.includes(t.id));
+    };
+
+    const getMinistryStudents = (ministryId: string) => {
+        if (!ministryMembers || !students) return [];
+        const studentIds = ministryMembers.students
+            .filter(m => m.ministryId === ministryId)
+            .map(m => m.studentId);
+        return students.filter(s => studentIds.includes(s.id));
+    };
+
     const filteredMinistries = ministries?.filter(ministry =>
         ministry.name.toLowerCase().includes(searchQuery.toLowerCase())
     ) || [];
@@ -216,7 +224,11 @@ export default function Ministries() {
                         {filteredMinistries.map((ministry) => {
                             const counts = getMemberCount(ministry.id);
                             return (
-                                <Card key={ministry.id} className="relative group">
+                                <Card
+                                    key={ministry.id}
+                                    className="relative group cursor-pointer hover:shadow-md transition-shadow"
+                                    onClick={() => setViewingMinistry(ministry)}
+                                >
                                     <CardHeader>
                                         <div className="flex items-center justify-between">
                                             <CardTitle className="text-xl">{ministry.name}</CardTitle>
@@ -226,7 +238,10 @@ export default function Ministries() {
                                                         size="icon"
                                                         variant="ghost"
                                                         className="h-8 w-8"
-                                                        onClick={() => handleOpenEdit(ministry)}
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            handleOpenEdit(ministry);
+                                                        }}
                                                     >
                                                         <Pencil className="h-4 w-4" />
                                                     </Button>
@@ -234,7 +249,10 @@ export default function Ministries() {
                                                         size="icon"
                                                         variant="ghost"
                                                         className="h-8 w-8 text-destructive"
-                                                        onClick={() => setDeletingMinistry(ministry)}
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            setDeletingMinistry(ministry);
+                                                        }}
                                                     >
                                                         <Trash2 className="h-4 w-4" />
                                                     </Button>
@@ -350,6 +368,94 @@ export default function Ministries() {
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
+
+            <Dialog open={!!viewingMinistry} onOpenChange={() => setViewingMinistry(null)}>
+                <DialogContent className="max-w-lg max-h-[80vh] overflow-y-auto">
+                    <DialogHeader>
+                        <DialogTitle className="flex items-center gap-2">
+                            <Users className="h-5 w-5" />
+                            {viewingMinistry?.name}
+                        </DialogTitle>
+                        {viewingMinistry?.description && (
+                            <p className="text-sm text-muted-foreground">{viewingMinistry.description}</p>
+                        )}
+                    </DialogHeader>
+                    {viewingMinistry && (
+                        <div className="space-y-6">
+                            <div>
+                                <h3 className="font-semibold text-sm mb-3 flex items-center gap-2">
+                                    <User className="h-4 w-4" />
+                                    교사 ({getMinistryTeachers(viewingMinistry.id).length}명)
+                                </h3>
+                                {getMinistryTeachers(viewingMinistry.id).length > 0 ? (
+                                    <div className="space-y-2">
+                                        {getMinistryTeachers(viewingMinistry.id).map((teacher) => (
+                                            <div
+                                                key={teacher.id}
+                                                className="flex items-center justify-between p-3 bg-muted/50 rounded-lg"
+                                            >
+                                                <div>
+                                                    <p className="font-medium">{teacher.name}</p>
+                                                </div>
+                                                {teacher.phone && (
+                                                    <Button size="sm" variant="ghost" asChild>
+                                                        <a href={`tel:${teacher.phone}`} className="flex items-center gap-1">
+                                                            <Phone className="h-4 w-4" />
+                                                            <span className="text-xs">{teacher.phone}</span>
+                                                        </a>
+                                                    </Button>
+                                                )}
+                                            </div>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <p className="text-sm text-muted-foreground">소속된 교사가 없습니다.</p>
+                                )}
+                            </div>
+
+                            <div>
+                                <h3 className="font-semibold text-sm mb-3 flex items-center gap-2">
+                                    <GraduationCap className="h-4 w-4" />
+                                    학생 ({getMinistryStudents(viewingMinistry.id).length}명)
+                                </h3>
+                                {getMinistryStudents(viewingMinistry.id).length > 0 ? (
+                                    <div className="space-y-2">
+                                        {getMinistryStudents(viewingMinistry.id).map((student) => (
+                                            <div
+                                                key={student.id}
+                                                className="flex items-center justify-between p-3 bg-muted/50 rounded-lg"
+                                            >
+                                                <div>
+                                                    <p className="font-medium">{student.name}</p>
+                                                    <p className="text-xs text-muted-foreground">
+                                                        {[student.school, student.grade].filter(Boolean).join(' ') || '-'}
+                                                    </p>
+                                                </div>
+                                                {student.phone && (
+                                                    <Button size="sm" variant="ghost" asChild>
+                                                        <a href={`tel:${student.phone}`} className="flex items-center gap-1">
+                                                            <Phone className="h-4 w-4" />
+                                                            <span className="text-xs">{student.phone}</span>
+                                                        </a>
+                                                    </Button>
+                                                )}
+                                            </div>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <p className="text-sm text-muted-foreground">소속된 학생이 없습니다.</p>
+                                )}
+                            </div>
+
+                            <DialogFooter>
+                                <Button onClick={() => setViewingMinistry(null)}>
+                                    닫기
+                                </Button>
+                            </DialogFooter>
+                        </div>
+                    )}
+                </DialogContent>
+            </Dialog>
         </DashboardLayout>
     );
 }
