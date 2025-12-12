@@ -31,6 +31,7 @@ const adminMenuItems = [
   { title: "목장 관리", url: "/mokjangs", icon: BookOpen },
   { title: "출석 체크", url: "/attendance", icon: UserCheck },
   { title: "장기결석자", url: "/long-absence", icon: AlertTriangle },
+  { title: "사역부서", url: "/ministries", icon: Users },
   { title: "통계/리포트", url: "/stats", icon: BarChart3 },
 ];
 

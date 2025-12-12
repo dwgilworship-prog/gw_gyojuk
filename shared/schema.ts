@@ -12,6 +12,7 @@ export const contactMethodEnum = pgEnum("contact_method", ["phone", "visit", "me
 export const genderEnum = pgEnum("gender", ["M", "F"]);
 export const baptismEnum = pgEnum("baptism", ["infant", "baptized", "confirmed", "none"]);
 export const teacherStatusEnum = pgEnum("teacher_status", ["active", "rest", "resigned"]);
+export const ministryRoleEnum = pgEnum("ministry_role", ["admin", "member", "leader"]);
 
 export const users = pgTable("users", {
   id: varchar("id", { length: 36 }).primaryKey().default(sql`gen_random_uuid()`),
@@ -59,10 +60,23 @@ export const mokjangs = pgTable("mokjangs", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+export const ministries = pgTable("ministries", {
+  id: varchar("id", { length: 36 }).primaryKey().default(sql`gen_random_uuid()`),
+  name: text("name").notNull(),
+  description: text("description"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 export const mokjangsRelations = relations(mokjangs, ({ many }) => ({
   mokjangTeachers: many(mokjangTeachers),
   students: many(students),
   reports: many(reports),
+}));
+
+export const ministriesRelations = relations(ministries, ({ many }) => ({
+  ministryTeachers: many(ministryTeachers),
+  ministryStudents: many(ministryStudents),
 }));
 
 export const mokjangTeachers = pgTable("mokjang_teachers", {
@@ -71,6 +85,46 @@ export const mokjangTeachers = pgTable("mokjang_teachers", {
   teacherId: varchar("teacher_id", { length: 36 }).notNull().references(() => teachers.id, { onDelete: "cascade" }),
   assignedAt: timestamp("assigned_at").defaultNow(),
 });
+
+export const ministryTeachers = pgTable("ministry_teachers", {
+  id: varchar("id", { length: 36 }).primaryKey().default(sql`gen_random_uuid()`),
+  ministryId: varchar("ministry_id", { length: 36 }).notNull().references(() => ministries.id, { onDelete: "cascade" }),
+  teacherId: varchar("teacher_id", { length: 36 }).notNull().references(() => teachers.id, { onDelete: "cascade" }),
+  role: ministryRoleEnum("role").default("member"),
+  assignedAt: timestamp("assigned_at").defaultNow(),
+});
+
+export const ministryStudents = pgTable("ministry_students", {
+  id: varchar("id", { length: 36 }).primaryKey().default(sql`gen_random_uuid()`),
+  ministryId: varchar("ministry_id", { length: 36 }).notNull().references(() => ministries.id, { onDelete: "cascade" }),
+  studentId: varchar("student_id", { length: 36 }).notNull().references(() => students.id, { onDelete: "cascade" }),
+  role: ministryRoleEnum("role").default("member"),
+  assignedAt: timestamp("assigned_at").defaultNow(),
+});
+
+
+
+export const ministryTeachersRelations = relations(ministryTeachers, ({ one }) => ({
+  ministry: one(ministries, {
+    fields: [ministryTeachers.ministryId],
+    references: [ministries.id],
+  }),
+  teacher: one(teachers, {
+    fields: [ministryTeachers.teacherId],
+    references: [teachers.id],
+  }),
+}));
+
+export const ministryStudentsRelations = relations(ministryStudents, ({ one }) => ({
+  ministry: one(ministries, {
+    fields: [ministryStudents.ministryId],
+    references: [ministries.id],
+  }),
+  student: one(students, {
+    fields: [ministryStudents.studentId],
+    references: [students.id],
+  }),
+}));
 
 export const mokjangTeachersRelations = relations(mokjangTeachers, ({ one }) => ({
   mokjang: one(mokjangs, {
@@ -203,7 +257,23 @@ export const insertMokjangSchema = createInsertSchema(mokjangs).omit({
   updatedAt: true,
 });
 
+export const insertMinistrySchema = createInsertSchema(ministries).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
 export const insertMokjangTeacherSchema = createInsertSchema(mokjangTeachers).omit({
+  id: true,
+  assignedAt: true,
+});
+
+export const insertMinistryTeacherSchema = createInsertSchema(ministryTeachers).omit({
+  id: true,
+  assignedAt: true,
+});
+
+export const insertMinistryStudentSchema = createInsertSchema(ministryStudents).omit({
   id: true,
   assignedAt: true,
 });
@@ -242,8 +312,14 @@ export type InsertTeacher = z.infer<typeof insertTeacherSchema>;
 export type Teacher = typeof teachers.$inferSelect;
 export type InsertMokjang = z.infer<typeof insertMokjangSchema>;
 export type Mokjang = typeof mokjangs.$inferSelect;
+export type InsertMinistry = z.infer<typeof insertMinistrySchema>;
+export type Ministry = typeof ministries.$inferSelect;
 export type InsertMokjangTeacher = z.infer<typeof insertMokjangTeacherSchema>;
 export type MokjangTeacher = typeof mokjangTeachers.$inferSelect;
+export type InsertMinistryTeacher = z.infer<typeof insertMinistryTeacherSchema>;
+export type MinistryTeacher = typeof ministryTeachers.$inferSelect;
+export type InsertMinistryStudent = z.infer<typeof insertMinistryStudentSchema>;
+export type MinistryStudent = typeof ministryStudents.$inferSelect;
 export type InsertStudent = z.infer<typeof insertStudentSchema>;
 export type Student = typeof students.$inferSelect;
 export type InsertAttendanceLog = z.infer<typeof insertAttendanceLogSchema>;

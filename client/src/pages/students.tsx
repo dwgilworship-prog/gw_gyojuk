@@ -63,8 +63,9 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
-import type { Student, Mokjang, Teacher, MokjangTeacher } from "@shared/schema";
+import type { Student, Mokjang, Teacher, MokjangTeacher, Ministry, MinistryStudent } from "@shared/schema";
 import { useAuth } from "@/hooks/use-auth";
+import { id } from "date-fns/locale";
 
 const studentFormSchema = z.object({
   name: z.string().min(1, "이름을 입력해주세요"),
@@ -74,6 +75,7 @@ const studentFormSchema = z.object({
   school: z.string().optional(),
   grade: z.string().optional(),
   mokjangId: z.string().optional(),
+  ministryIds: z.array(z.string()).optional(),
   gender: z.enum(["M", "F"]).optional(),
   baptism: z.enum(["none", "infant", "baptized", "confirmed"]).optional(),
   status: z.enum(["ACTIVE", "REST", "GRADUATED"]).default("ACTIVE"),
@@ -116,6 +118,7 @@ export default function Students() {
   const [gradeFilter, setGradeFilter] = useState<string>("all");
   const [mokjangFilter, setMokjangFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [ministryFilter, setMinistryFilter] = useState<string>("all");
 
   const [sortField, setSortField] = useState<SortField>("name");
   const [sortOrder, setSortOrder] = useState<SortOrder>("asc");
@@ -144,6 +147,14 @@ export default function Students() {
     queryKey: ["/api/mokjang-teachers"],
   });
 
+  const { data: ministries } = useQuery<Ministry[]>({
+    queryKey: ["/api/ministries"],
+  });
+
+  const { data: ministryMembers } = useQuery<{ students: MinistryStudent[] }>({
+    queryKey: ["/api/ministry-members"],
+  });
+
   const form = useForm<StudentFormData>({
     resolver: zodResolver(studentFormSchema),
     defaultValues: {
@@ -157,6 +168,7 @@ export default function Students() {
       gender: undefined,
       baptism: "none",
       status: "ACTIVE",
+      ministryIds: [],
     },
   });
 
@@ -173,7 +185,16 @@ export default function Students() {
         gender: data.gender || null,
         baptism: data.baptism || "none",
       };
-      return await apiRequest("POST", "/api/students", payload);
+      const res = await apiRequest("POST", "/api/students", payload);
+      const student = await res.json();
+
+      // Assign to ministries
+      if (data.ministryIds && data.ministryIds.length > 0) {
+        await Promise.all(data.ministryIds.map(ministryId =>
+          apiRequest("POST", `/api/ministries/${ministryId}/students/${student.id}`)
+        ));
+      }
+      return student;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/students"] });
@@ -199,10 +220,28 @@ export default function Students() {
         gender: data.gender || null,
         baptism: data.baptism || "none",
       };
-      return await apiRequest("PATCH", `/api/students/${id}`, payload);
+
+      const res = await apiRequest("PATCH", `/api/students/${id}`, payload);
+      const student = await res.json();
+
+      // Update ministries if changed
+      if (data.ministryIds) {
+        // First remove all existing assignments
+        const currentAssignments = ministryMembers?.students.filter(ms => ms.studentId === id) || [];
+        await Promise.all(currentAssignments.map(ms =>
+          apiRequest("DELETE", `/api/ministries/${ms.ministryId}/students/${id}`)
+        ));
+
+        // Then add new ones
+        await Promise.all(data.ministryIds.map(ministryId =>
+          apiRequest("POST", `/api/ministries/${ministryId}/students/${id}`)
+        ));
+      }
+      return student;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/students"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/ministry-members"] });
       toast({ title: "학생 정보가 수정되었습니다." });
       handleCloseForm();
     },
@@ -271,6 +310,7 @@ export default function Students() {
       gender: undefined,
       baptism: "none",
       status: "ACTIVE",
+      ministryIds: [],
     });
     setIsFormOpen(true);
   };
@@ -288,6 +328,9 @@ export default function Students() {
       gender: student.gender || undefined,
       baptism: student.baptism || "none",
       status: student.status,
+      ministryIds: ministryMembers?.students
+        ?.filter(ms => ms.studentId === student.id)
+        .map(ms => ms.ministryId) || [],
     });
     setIsFormOpen(true);
   };
@@ -316,6 +359,14 @@ export default function Students() {
     const mt = mokjangTeachers.find((mt) => mt.mokjangId === mokjangId);
     if (!mt) return null;
     return teachers.find((t) => t.id === mt.teacherId)?.name;
+  };
+
+  const getStudentMinistries = (studentId: string) => {
+    if (!ministryMembers || !ministries) return [];
+    const assignedIds = ministryMembers.students
+      .filter(ms => ms.studentId === studentId)
+      .map(ms => ms.ministryId);
+    return ministries.filter(m => assignedIds.includes(m.id)).map(m => m.name);
   };
 
   const maskPhone = (phone: string | null) => {
@@ -355,7 +406,12 @@ export default function Students() {
         (mokjangFilter === "unassigned" ? !student.mokjangId : student.mokjangId === mokjangFilter);
       const matchesStatus = statusFilter === "all" || student.status === statusFilter;
 
-      return matchesSearch && matchesGrade && matchesMokjang && matchesStatus;
+      const studentMinistries = ministryMembers?.students
+        ?.filter(ms => ms.studentId === student.id)
+        .map(ms => ms.ministryId) || [];
+      const matchesMinistry = ministryFilter === "all" || studentMinistries.includes(ministryFilter);
+
+      return matchesSearch && matchesGrade && matchesMokjang && matchesStatus && matchesMinistry;
     });
 
     result.sort((a, b) => {
@@ -487,6 +543,18 @@ export default function Students() {
               </SelectContent>
             </Select>
 
+            <Select value={ministryFilter} onValueChange={(v) => { setMinistryFilter(v); setCurrentPage(1); }}>
+              <SelectTrigger className="w-[120px]" data-testid="filter-ministry">
+                <SelectValue placeholder="전체부서" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">전체부서</SelectItem>
+                {ministries?.map(m => (
+                  <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
             <div className="ml-auto hidden md:flex items-center gap-1">
               <Button
                 size="icon"
@@ -555,6 +623,7 @@ export default function Students() {
                           </TableHead>
                           <TableHead>학교</TableHead>
                           <TableHead>목장</TableHead>
+                          <TableHead className="hidden lg:table-cell">사역</TableHead>
                           <TableHead className="hidden lg:table-cell">담당교사</TableHead>
                           <TableHead className="hidden md:table-cell">연락처</TableHead>
                           <TableHead
@@ -598,6 +667,13 @@ export default function Students() {
                             </TableCell>
                             <TableCell onClick={() => setViewingStudent(student)}>
                               {getMokjangName(student.mokjangId) || "-"}
+                            </TableCell>
+                            <TableCell className="hidden lg:table-cell" onClick={() => setViewingStudent(student)}>
+                              <div className="flex flex-wrap gap-1">
+                                {getStudentMinistries(student.id).map((name, i) => (
+                                  <Badge key={i} variant="outline" className="text-xs">{name}</Badge>
+                                ))}
+                              </div>
                             </TableCell>
                             <TableCell className="hidden lg:table-cell" onClick={() => setViewingStudent(student)}>
                               {getTeacherForMokjang(student.mokjangId) || "-"}
@@ -692,6 +768,12 @@ export default function Students() {
                               <div className="flex items-center gap-2">
                                 <Users className="h-3 w-3" />
                                 <span className="truncate">{getMokjangName(student.mokjangId)}</span>
+                              </div>
+                            )}
+                            {getStudentMinistries(student.id).length > 0 && (
+                              <div className="flex items-center gap-2">
+                                <Users className="h-3 w-3" />
+                                <span className="truncate">{getStudentMinistries(student.id).join(", ")}</span>
                               </div>
                             )}
                             {student.phone && (
@@ -798,6 +880,8 @@ export default function Students() {
               </Card>
             )}
 
+
+
             <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
               <div className="flex items-center gap-2">
                 <Button
@@ -859,27 +943,27 @@ export default function Students() {
       </div>
 
       <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-        <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{editingStudent ? "학생 정보 수정" : "학생 추가"}</DialogTitle>
           </DialogHeader>
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-              <FormField
-                control={form.control}
-                name="name"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>이름 *</FormLabel>
-                    <FormControl>
-                      <Input placeholder="홍길동" {...field} data-testid="input-student-name" />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="name"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>이름 *</FormLabel>
+                      <FormControl>
+                        <Input placeholder="홍길동" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
-              <div className="grid grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
                   name="birth"
@@ -887,8 +971,97 @@ export default function Students() {
                     <FormItem>
                       <FormLabel>생년월일</FormLabel>
                       <FormControl>
-                        <Input type="date" {...field} data-testid="input-student-birth" />
+                        <Input type="date" {...field} />
                       </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="phone"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>연락처</FormLabel>
+                      <FormControl>
+                        <Input placeholder="010-0000-0000" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="parentPhone"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>보호자 연락처</FormLabel>
+                      <FormControl>
+                        <Input placeholder="010-0000-0000" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="school"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>학교</FormLabel>
+                      <FormControl>
+                        <Input placeholder="학교 입력" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="grade"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>학년</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="학년 선택" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {gradeOptions.map((grade) => (
+                            <SelectItem key={grade} value={grade}>{grade}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="mokjangId"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>목장</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="목장 선택" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="none">미배정</SelectItem>
+                          {mokjangs?.map((m) => (
+                            <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -902,12 +1075,12 @@ export default function Students() {
                       <FormLabel>상태</FormLabel>
                       <Select onValueChange={field.onChange} defaultValue={field.value}>
                         <FormControl>
-                          <SelectTrigger data-testid="select-student-status">
+                          <SelectTrigger>
                             <SelectValue placeholder="상태 선택" />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="ACTIVE">활동</SelectItem>
+                          <SelectItem value="ACTIVE">재적</SelectItem>
                           <SelectItem value="REST">휴식</SelectItem>
                           <SelectItem value="GRADUATED">졸업</SelectItem>
                         </SelectContent>
@@ -916,113 +1089,16 @@ export default function Students() {
                     </FormItem>
                   )}
                 />
-              </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="phone"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>연락처</FormLabel>
-                      <FormControl>
-                        <Input placeholder="010-0000-0000" {...field} data-testid="input-student-phone" />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="parentPhone"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>부모 연락처</FormLabel>
-                      <FormControl>
-                        <Input placeholder="010-0000-0000" {...field} data-testid="input-student-parent-phone" />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="school"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>학교</FormLabel>
-                      <FormControl>
-                        <Input placeholder="OO중학교" {...field} data-testid="input-student-school" />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="grade"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>학년</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value || ""}>
-                        <FormControl>
-                          <SelectTrigger data-testid="input-student-grade">
-                            <SelectValue placeholder="학년 선택" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {gradeOptions.map(grade => (
-                            <SelectItem key={grade} value={grade}>{grade}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-
-              <FormField
-                control={form.control}
-                name="mokjangId"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>소속 목장</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                      <FormControl>
-                        <SelectTrigger data-testid="select-student-mokjang">
-                          <SelectValue placeholder="목장 선택" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="none">미배정</SelectItem>
-                        {mokjangs?.map((mokjang) => (
-                          <SelectItem key={mokjang.id} value={mokjang.id}>
-                            {mokjang.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <div className="grid grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
                   name="gender"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>성별</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value || ""}>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
                         <FormControl>
-                          <SelectTrigger data-testid="select-student-gender">
+                          <SelectTrigger>
                             <SelectValue placeholder="성별 선택" />
                           </SelectTrigger>
                         </FormControl>
@@ -1041,11 +1117,11 @@ export default function Students() {
                   name="baptism"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>세례 여부</FormLabel>
+                      <FormLabel>세례 구분</FormLabel>
                       <Select onValueChange={field.onChange} defaultValue={field.value}>
                         <FormControl>
-                          <SelectTrigger data-testid="select-student-baptism">
-                            <SelectValue placeholder="세례 선택" />
+                          <SelectTrigger>
+                            <SelectValue placeholder="세례 구분 선택" />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
@@ -1061,6 +1137,45 @@ export default function Students() {
                 />
               </div>
 
+              <div className="space-y-2">
+                <FormLabel>사역부서</FormLabel>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 border rounded-md p-3">
+                  {ministries?.map(ministry => (
+                    <FormField
+                      key={ministry.id}
+                      control={form.control}
+                      name="ministryIds"
+                      render={({ field }) => {
+                        return (
+                          <FormItem
+                            key={ministry.id}
+                            className="flex flex-row items-start space-x-3 space-y-0"
+                          >
+                            <FormControl>
+                              <Checkbox
+                                checked={field.value?.includes(ministry.id)}
+                                onCheckedChange={(checked) => {
+                                  return checked
+                                    ? field.onChange([...(field.value || []), ministry.id])
+                                    : field.onChange(
+                                      field.value?.filter(
+                                        (value) => value !== ministry.id
+                                      )
+                                    )
+                                }}
+                              />
+                            </FormControl>
+                            <FormLabel className="font-normal cursor-pointer">
+                              {ministry.name}
+                            </FormLabel>
+                          </FormItem>
+                        )
+                      }}
+                    />
+                  ))}
+                </div>
+              </div>
+
               <DialogFooter>
                 <Button type="button" variant="outline" onClick={handleCloseForm}>
                   취소
@@ -1068,7 +1183,6 @@ export default function Students() {
                 <Button
                   type="submit"
                   disabled={createMutation.isPending || updateMutation.isPending}
-                  data-testid="button-submit-student"
                 >
                   {createMutation.isPending || updateMutation.isPending ? "저장 중..." : "저장"}
                 </Button>
@@ -1183,6 +1297,17 @@ export default function Students() {
                       <Home className="h-4 w-4 text-muted-foreground" />
                       <span className="text-muted-foreground">목장:</span>
                       <span>{getMokjangName(viewingStudent.mokjangId)}</span>
+                    </div>
+                  )}
+                  {getStudentMinistries(viewingStudent.id).length > 0 && (
+                    <div className="flex items-start gap-2">
+                      <Users className="h-4 w-4 text-muted-foreground mt-0.5" />
+                      <span className="text-muted-foreground whitespace-nowrap">사역:</span>
+                      <div className="flex flex-wrap gap-1">
+                        {getStudentMinistries(viewingStudent.id).map((name, i) => (
+                          <Badge key={i} variant="outline" className="text-xs">{name}</Badge>
+                        ))}
+                      </div>
                     </div>
                   )}
                 </div>

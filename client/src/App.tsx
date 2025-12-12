@@ -12,6 +12,7 @@ import Mokjangs from "@/pages/mokjangs";
 import Attendance from "@/pages/attendance";
 import LongAbsence from "@/pages/long-absence";
 import Stats from "@/pages/stats";
+import Ministries from "@/pages/ministries";
 import { AuthProvider } from "@/hooks/use-auth";
 import { ThemeProvider } from "@/hooks/use-theme";
 import { ProtectedRoute } from "@/lib/protected-route";
@@ -26,6 +27,7 @@ function Router() {
       <ProtectedRoute path="/attendance" component={Attendance} />
       <ProtectedRoute path="/long-absence" component={LongAbsence} />
       <ProtectedRoute path="/stats" component={Stats} />
+      <ProtectedRoute path="/ministries" component={Ministries} />
       <Route path="/auth" component={AuthPage} />
       <Route component={NotFound} />
     </Switch>

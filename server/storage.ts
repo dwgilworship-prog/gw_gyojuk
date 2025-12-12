@@ -7,7 +7,11 @@ import {
   type Student, type InsertStudent,
   type AttendanceLog, type InsertAttendanceLog,
   type Report, type InsertReport,
-  type LongAbsenceContact, type InsertLongAbsenceContact
+  type LongAbsenceContact, type InsertLongAbsenceContact,
+  ministries, ministryTeachers, ministryStudents,
+  type Ministry, type InsertMinistry,
+  type MinistryTeacher, type InsertMinistryTeacher,
+  type MinistryStudent, type InsertMinistryStudent
 } from "@shared/schema";
 import { db, pool } from "./db";
 import { eq, and, gte, lte, desc, sql, count } from "drizzle-orm";
@@ -71,7 +75,29 @@ export interface IStorage {
   getLongAbsenceContactsByStudentId(studentId: string): Promise<LongAbsenceContact[]>;
   createLongAbsenceContact(contact: InsertLongAbsenceContact): Promise<LongAbsenceContact>;
   getStudentLastAttendance(studentId: string): Promise<{ date: string } | undefined>;
+
+  // Ministry related
+  getMinistry(id: string): Promise<Ministry | undefined>;
+  getMinistries(): Promise<Ministry[]>;
+  createMinistry(ministry: InsertMinistry): Promise<Ministry>;
+  updateMinistry(id: string, ministry: Partial<InsertMinistry>): Promise<Ministry | undefined>;
+  deleteMinistry(id: string): Promise<boolean>;
+
+  assignTeacherToMinistry(ministryId: string, teacherId: string, role?: "admin" | "member" | "leader"): Promise<MinistryTeacher>;
+  removeTeacherFromMinistry(ministryId: string, teacherId: string): Promise<boolean>;
+  getMinistryTeachers(ministryId: string): Promise<MinistryTeacher[]>;
+  getMinistriesByTeacherId(teacherId: string): Promise<Ministry[]>;
+
+  assignStudentToMinistry(ministryId: string, studentId: string, role?: "admin" | "member" | "leader"): Promise<MinistryStudent>;
+  removeStudentFromMinistry(ministryId: string, studentId: string): Promise<boolean>;
+  getMinistryStudents(ministryId: string): Promise<MinistryStudent[]>;
+  getStudentsByMinistryId(ministryId: string): Promise<Student[]>;
+  getMinistriesByStudentId(studentId: string): Promise<Ministry[]>;
+  getTeachersByMinistryId(ministryId: string): Promise<Teacher[]>;
+  getAllMinistryTeachers(): Promise<MinistryTeacher[]>;
+  getAllMinistryStudents(): Promise<MinistryStudent[]>;
 }
+
 
 export class DatabaseStorage implements IStorage {
   sessionStore: session.Store;
@@ -387,6 +413,128 @@ export class DatabaseStorage implements IStorage {
       .orderBy(desc(attendanceLogs.date))
       .limit(1);
     return log || undefined;
+  }
+
+  // Ministry implementation
+  async getMinistry(id: string): Promise<Ministry | undefined> {
+    const [ministry] = await db.select().from(ministries).where(eq(ministries.id, id));
+    return ministry || undefined;
+  }
+
+  async getMinistries(): Promise<Ministry[]> {
+    return await db.select().from(ministries).orderBy(ministries.name);
+  }
+
+  async createMinistry(insertMinistry: InsertMinistry): Promise<Ministry> {
+    const [ministry] = await db.insert(ministries).values(insertMinistry).returning();
+    return ministry;
+  }
+
+  async updateMinistry(id: string, ministryData: Partial<InsertMinistry>): Promise<Ministry | undefined> {
+    const [ministry] = await db.update(ministries)
+      .set({ ...ministryData, updatedAt: new Date() })
+      .where(eq(ministries.id, id))
+      .returning();
+    return ministry || undefined;
+  }
+
+  async deleteMinistry(id: string): Promise<boolean> {
+    const result = await db.delete(ministries).where(eq(ministries.id, id));
+    return (result.rowCount ?? 0) > 0;
+  }
+
+  async assignTeacherToMinistry(ministryId: string, teacherId: string, role: "admin" | "member" | "leader" = "member"): Promise<MinistryTeacher> {
+    const existing = await db.select().from(ministryTeachers)
+      .where(and(eq(ministryTeachers.ministryId, ministryId), eq(ministryTeachers.teacherId, teacherId)));
+
+    if (existing.length > 0) {
+      return existing[0];
+    }
+
+    const [assignment] = await db.insert(ministryTeachers)
+      .values({ ministryId, teacherId, role })
+      .returning();
+    return assignment;
+  }
+
+  async removeTeacherFromMinistry(ministryId: string, teacherId: string): Promise<boolean> {
+    const result = await db.delete(ministryTeachers)
+      .where(and(eq(ministryTeachers.ministryId, ministryId), eq(ministryTeachers.teacherId, teacherId)));
+    return (result.rowCount ?? 0) > 0;
+  }
+
+  async getMinistryTeachers(ministryId: string): Promise<MinistryTeacher[]> {
+    return await db.select().from(ministryTeachers).where(eq(ministryTeachers.ministryId, ministryId));
+  }
+
+  async getTeachersByMinistryId(ministryId: string): Promise<Teacher[]> {
+    const result = await db
+      .select({ teacher: teachers })
+      .from(ministryTeachers)
+      .innerJoin(teachers, eq(ministryTeachers.teacherId, teachers.id))
+      .where(eq(ministryTeachers.ministryId, ministryId))
+      .orderBy(teachers.name);
+    return result.map(r => r.teacher);
+  }
+
+  async getAllMinistryTeachers(): Promise<MinistryTeacher[]> {
+    return await db.select().from(ministryTeachers);
+  }
+
+  async getMinistriesByTeacherId(teacherId: string): Promise<Ministry[]> {
+    const result = await db
+      .select({ ministry: ministries })
+      .from(ministryTeachers)
+      .innerJoin(ministries, eq(ministryTeachers.ministryId, ministries.id))
+      .where(eq(ministryTeachers.teacherId, teacherId));
+    return result.map(r => r.ministry);
+  }
+
+  async assignStudentToMinistry(ministryId: string, studentId: string, role: "admin" | "member" | "leader" = "member"): Promise<MinistryStudent> {
+    const existing = await db.select().from(ministryStudents)
+      .where(and(eq(ministryStudents.ministryId, ministryId), eq(ministryStudents.studentId, studentId)));
+
+    if (existing.length > 0) {
+      return existing[0];
+    }
+
+    const [assignment] = await db.insert(ministryStudents)
+      .values({ ministryId, studentId, role })
+      .returning();
+    return assignment;
+  }
+
+  async removeStudentFromMinistry(ministryId: string, studentId: string): Promise<boolean> {
+    const result = await db.delete(ministryStudents)
+      .where(and(eq(ministryStudents.ministryId, ministryId), eq(ministryStudents.studentId, studentId)));
+    return (result.rowCount ?? 0) > 0;
+  }
+
+  async getMinistryStudents(ministryId: string): Promise<MinistryStudent[]> {
+    return await db.select().from(ministryStudents).where(eq(ministryStudents.ministryId, ministryId));
+  }
+
+  async getStudentsByMinistryId(ministryId: string): Promise<Student[]> {
+    const result = await db
+      .select({ student: students })
+      .from(ministryStudents)
+      .innerJoin(students, eq(ministryStudents.studentId, students.id))
+      .where(eq(ministryStudents.ministryId, ministryId))
+      .orderBy(students.name);
+    return result.map(r => r.student);
+  }
+
+  async getAllMinistryStudents(): Promise<MinistryStudent[]> {
+    return await db.select().from(ministryStudents);
+  }
+
+  async getMinistriesByStudentId(studentId: string): Promise<Ministry[]> {
+    const result = await db
+      .select({ ministry: ministries })
+      .from(ministryStudents)
+      .innerJoin(ministries, eq(ministryStudents.ministryId, ministries.id))
+      .where(eq(ministryStudents.studentId, studentId));
+    return result.map(r => r.ministry);
   }
 }
 

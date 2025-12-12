@@ -26,6 +26,11 @@ export async function registerRoutes(
 
   app.get("/api/teachers", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
+    const { ministryId } = req.query;
+    if (ministryId && typeof ministryId === "string") {
+      const teachers = await storage.getTeachersByMinistryId(ministryId);
+      return res.json(teachers);
+    }
     const teachers = await storage.getTeachers();
     res.json(teachers);
   });
@@ -163,9 +168,13 @@ export async function registerRoutes(
 
   app.get("/api/students", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
-    const { mokjangId } = req.query;
+    const { mokjangId, ministryId } = req.query;
     if (mokjangId && typeof mokjangId === "string") {
       const students = await storage.getStudentsByMokjangId(mokjangId);
+      return res.json(students);
+    }
+    if (ministryId && typeof ministryId === "string") {
+      const students = await storage.getStudentsByMinistryId(ministryId);
       return res.json(students);
     }
     const students = await storage.getStudents();
@@ -382,6 +391,94 @@ export async function registerRoutes(
     if (!req.isAuthenticated()) return res.sendStatus(401);
     const contact = await storage.createLongAbsenceContact(req.body);
     res.status(201).json(contact);
+  });
+
+  // Ministry Routes
+  app.get("/api/ministries", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const ministries = await storage.getMinistries();
+    res.json(ministries);
+  });
+
+  app.post("/api/ministries", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const user = req.user!;
+    if (user.role !== "admin") return res.sendStatus(403);
+    const ministry = await storage.createMinistry(req.body);
+    res.status(201).json(ministry);
+  });
+
+  app.patch("/api/ministries/:id", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const user = req.user!;
+    if (user.role !== "admin") return res.sendStatus(403);
+    const ministry = await storage.updateMinistry(req.params.id, req.body);
+    if (!ministry) return res.sendStatus(404);
+    res.json(ministry);
+  });
+
+  app.delete("/api/ministries/:id", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const user = req.user!;
+    if (user.role !== "admin") return res.sendStatus(403);
+    const deleted = await storage.deleteMinistry(req.params.id);
+    if (!deleted) return res.sendStatus(404);
+    res.sendStatus(200);
+  });
+
+  app.get("/api/ministries/:id/teachers", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const teachers = await storage.getMinistryTeachers(req.params.id);
+    res.json(teachers);
+  });
+
+  app.post("/api/ministries/:id/teachers/:teacherId", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const user = req.user!;
+    if (user.role !== "admin") return res.sendStatus(403);
+    const assignment = await storage.assignTeacherToMinistry(req.params.id, req.params.teacherId, req.body.role);
+    res.status(201).json(assignment);
+  });
+
+  app.delete("/api/ministries/:id/teachers/:teacherId", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const user = req.user!;
+    if (user.role !== "admin") return res.sendStatus(403);
+    const removed = await storage.removeTeacherFromMinistry(req.params.id, req.params.teacherId);
+    if (!removed) return res.sendStatus(404);
+    res.sendStatus(200);
+  });
+
+  app.get("/api/ministries/:id/students", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const students = await storage.getMinistryStudents(req.params.id);
+    res.json(students);
+  });
+
+  app.post("/api/ministries/:id/students/:studentId", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const user = req.user!;
+    if (user.role !== "admin") return res.sendStatus(403);
+    const assignment = await storage.assignStudentToMinistry(req.params.id, req.params.studentId, req.body.role);
+    res.status(201).json(assignment);
+  });
+
+  app.delete("/api/ministries/:id/students/:studentId", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const user = req.user!;
+    if (user.role !== "admin") return res.sendStatus(403);
+    const removed = await storage.removeStudentFromMinistry(req.params.id, req.params.studentId);
+    if (!removed) return res.sendStatus(404);
+    res.sendStatus(200);
+  });
+
+  app.get("/api/ministry-members", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const [teachers, students] = await Promise.all([
+      storage.getAllMinistryTeachers(),
+      storage.getAllMinistryStudents(),
+    ]);
+    res.json({ teachers, students });
   });
 
   return httpServer;

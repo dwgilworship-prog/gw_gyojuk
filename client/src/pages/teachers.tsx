@@ -4,6 +4,7 @@ import { DashboardLayout } from "@/components/dashboard-layout";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import {
   Table,
@@ -52,7 +53,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
-import type { Teacher, Mokjang, MokjangTeacher, Student, User } from "@shared/schema";
+import type { Teacher, Mokjang, MokjangTeacher, Student, User, Ministry, MinistryTeacher } from "@shared/schema";
 import { useAuth } from "@/hooks/use-auth";
 
 const teacherFormSchema = z.object({
@@ -62,6 +63,7 @@ const teacherFormSchema = z.object({
   birth: z.string().optional(),
   startedAt: z.string().optional(),
   status: z.enum(["active", "rest", "resigned"]).default("active"),
+  ministryIds: z.array(z.string()).optional(),
 });
 
 type TeacherFormData = z.infer<typeof teacherFormSchema>;
@@ -104,6 +106,14 @@ export default function Teachers() {
     queryKey: ["/api/users"],
   });
 
+  const { data: ministries } = useQuery<Ministry[]>({
+    queryKey: ["/api/ministries"],
+  });
+
+  const { data: ministryMembers } = useQuery<{ teachers: MinistryTeacher[] }>({
+    queryKey: ["/api/ministry-members"],
+  });
+
   const form = useForm<TeacherFormData>({
     resolver: zodResolver(teacherFormSchema),
     defaultValues: {
@@ -113,6 +123,7 @@ export default function Teachers() {
       birth: "",
       startedAt: "",
       status: "active",
+      ministryIds: [],
     },
   });
 
@@ -126,7 +137,16 @@ export default function Teachers() {
         startedAt: data.startedAt || null,
         status: data.status || "active",
       };
-      return await apiRequest("POST", "/api/teachers", payload);
+      const res = await apiRequest("POST", "/api/teachers", payload);
+      const teacher = await res.json();
+
+      // Assign to ministries
+      if (data.ministryIds && data.ministryIds.length > 0) {
+        await Promise.all(data.ministryIds.map(ministryId =>
+          apiRequest("POST", `/api/ministries/${ministryId}/teachers/${teacher.id}`)
+        ));
+      }
+      return teacher;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/teachers"] });
@@ -148,10 +168,27 @@ export default function Teachers() {
         startedAt: data.startedAt || null,
         status: data.status || "active",
       };
-      return await apiRequest("PATCH", `/api/teachers/${id}`, payload);
+      const res = await apiRequest("PATCH", `/api/teachers/${id}`, payload);
+      const teacher = await res.json();
+
+      // Update ministries if changed
+      if (data.ministryIds) {
+        // First remove all existing assignments
+        const currentAssignments = ministryMembers?.teachers.filter(mt => mt.teacherId === id) || [];
+        await Promise.all(currentAssignments.map(mt =>
+          apiRequest("DELETE", `/api/ministries/${mt.ministryId}/teachers/${id}`)
+        ));
+
+        // Then add new ones
+        await Promise.all(data.ministryIds.map(ministryId =>
+          apiRequest("POST", `/api/ministries/${ministryId}/teachers/${id}`)
+        ));
+      }
+      return teacher;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/teachers"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/ministry-members"] });
       toast({ title: "교사 정보가 수정되었습니다." });
       handleCloseForm();
     },
@@ -184,6 +221,7 @@ export default function Teachers() {
       birth: "",
       startedAt: "",
       status: "active",
+      ministryIds: [],
     });
     setIsFormOpen(true);
   };
@@ -197,6 +235,9 @@ export default function Teachers() {
       birth: teacher.birth || "",
       startedAt: teacher.startedAt || "",
       status: teacher.status || "active",
+      ministryIds: ministryMembers?.teachers
+        ?.filter(mt => mt.teacherId === teacher.id)
+        .map(mt => mt.ministryId) || [],
     });
     setIsFormOpen(true);
   };
@@ -239,6 +280,14 @@ export default function Teachers() {
       .filter(mt => mt.teacherId === teacherId)
       .map(mt => mt.mokjangId);
     return students.filter(s => s.mokjangId && mokjangIds.includes(s.mokjangId)).length;
+  };
+
+  const getTeacherMinistries = (teacherId: string) => {
+    if (!ministryMembers || !ministries) return [];
+    const assignedIds = ministryMembers.teachers
+      .filter(mt => mt.teacherId === teacherId)
+      .map(mt => mt.ministryId);
+    return ministries.filter(m => assignedIds.includes(m.id)).map(m => m.name);
   };
 
   const maskPhone = (phone: string | null) => {
@@ -341,6 +390,7 @@ export default function Teachers() {
                       <TableHead>이름</TableHead>
                       <TableHead>역할</TableHead>
                       <TableHead className="hidden md:table-cell">연락처</TableHead>
+                      <TableHead>사역부서</TableHead>
                       <TableHead>담당 목장</TableHead>
                       <TableHead className="hidden lg:table-cell">담당학생</TableHead>
                       <TableHead>상태</TableHead>
@@ -375,6 +425,13 @@ export default function Teachers() {
                           </TableCell>
                           <TableCell className="hidden md:table-cell">
                             {maskPhone(teacher.phone)}
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex flex-wrap gap-1">
+                              {getTeacherMinistries(teacher.id).map((name, i) => (
+                                <Badge key={i} variant="outline" className="text-xs">{name}</Badge>
+                              ))}
+                            </div>
                           </TableCell>
                           <TableCell>
                             {assignedMokjangs.length > 0 ? assignedMokjangs.join(", ") : "-"}
@@ -546,6 +603,45 @@ export default function Teachers() {
                     </FormItem>
                   )}
                 />
+              </div>
+
+              <div className="space-y-2">
+                <FormLabel>사역부서</FormLabel>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 border rounded-md p-3">
+                  {ministries?.map(ministry => (
+                    <FormField
+                      key={ministry.id}
+                      control={form.control}
+                      name="ministryIds"
+                      render={({ field }) => {
+                        return (
+                          <FormItem
+                            key={ministry.id}
+                            className="flex flex-row items-start space-x-3 space-y-0"
+                          >
+                            <FormControl>
+                              <Checkbox
+                                checked={field.value?.includes(ministry.id)}
+                                onCheckedChange={(checked) => {
+                                  return checked
+                                    ? field.onChange([...(field.value || []), ministry.id])
+                                    : field.onChange(
+                                      field.value?.filter(
+                                        (value) => value !== ministry.id
+                                      )
+                                    )
+                                }}
+                              />
+                            </FormControl>
+                            <FormLabel className="font-normal cursor-pointer">
+                              {ministry.name}
+                            </FormLabel>
+                          </FormItem>
+                        )
+                      }}
+                    />
+                  ))}
+                </div>
               </div>
 
               <DialogFooter>
