@@ -79,7 +79,8 @@ export function setupAuth(app: Express) {
 
       req.login(user, (err) => {
         if (err) return next(err);
-        res.status(201).json(user);
+        const { password: _, ...safeUser } = user;
+        res.status(201).json(safeUser);
       });
     } catch (error) {
       next(error);
@@ -94,7 +95,8 @@ export function setupAuth(app: Express) {
       }
       req.login(user, (err) => {
         if (err) return next(err);
-        res.status(200).json(user);
+        const { password, ...safeUser } = user;
+        res.status(200).json(safeUser);
       });
     })(req, res, next);
   });
@@ -108,6 +110,47 @@ export function setupAuth(app: Express) {
 
   app.get("/api/user", (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
-    res.json(req.user);
+    const { password, ...safeUser } = req.user!;
+    res.json(safeUser);
+  });
+
+  app.post("/api/change-password", async (req, res, next) => {
+    try {
+      if (!req.isAuthenticated()) return res.sendStatus(401);
+
+      const { currentPassword, newPassword } = req.body;
+      const user = req.user!;
+
+      if (!newPassword || newPassword.length < 6) {
+        return res.status(400).send("비밀번호는 최소 6자 이상이어야 합니다");
+      }
+
+      // 현재 비밀번호 확인 (초기 비밀번호 변경이 아닌 경우)
+      if (!user.mustChangePassword && currentPassword) {
+        const isValid = await comparePasswords(currentPassword, user.password);
+        if (!isValid) {
+          return res.status(400).send("현재 비밀번호가 올바르지 않습니다");
+        }
+      }
+
+      const hashedPassword = await hashPassword(newPassword);
+      const updatedUser = await storage.updateUser(user.id, {
+        password: hashedPassword,
+        mustChangePassword: false,
+      });
+
+      if (!updatedUser) {
+        return res.status(500).send("비밀번호 변경 실패");
+      }
+
+      // 세션 업데이트
+      req.login(updatedUser, (err) => {
+        if (err) return next(err);
+        const { password: _, ...safeUser } = updatedUser;
+        res.status(200).json(safeUser);
+      });
+    } catch (error) {
+      next(error);
+    }
   });
 }

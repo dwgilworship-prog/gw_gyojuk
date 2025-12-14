@@ -67,6 +67,7 @@ export async function registerRoutes(
       email,
       password: hashedPassword,
       role: "teacher",
+      mustChangePassword: true,
     });
 
     const teacher = await storage.createTeacher({

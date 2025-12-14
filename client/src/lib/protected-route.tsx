@@ -1,4 +1,5 @@
 import { useAuth } from "@/hooks/use-auth";
+import { ChangePasswordModal } from "@/components/change-password-modal";
 import { Loader2 } from "lucide-react";
 import { Redirect, Route } from "wouter";
 
@@ -32,5 +33,10 @@ export function ProtectedRoute({
     );
   }
 
-  return <Route path={path} component={Component} />;
+  return (
+    <Route path={path}>
+      <ChangePasswordModal />
+      <Component />
+    </Route>
+  );
 }

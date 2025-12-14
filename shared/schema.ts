@@ -19,6 +19,7 @@ export const users = pgTable("users", {
   email: text("email").notNull().unique(),
   password: text("password").notNull(),
   role: userRoleEnum("role").notNull().default("teacher"),
+  mustChangePassword: boolean("must_change_password").notNull().default(false),
   createdAt: timestamp("created_at").defaultNow(),
 });
 

@@ -8,6 +8,11 @@ import { User as SelectUser, InsertUser } from "@shared/schema";
 import { getQueryFn, apiRequest, queryClient } from "../lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 
+type ChangePasswordData = {
+  currentPassword?: string;
+  newPassword: string;
+};
+
 type AuthContextType = {
   user: SelectUser | null;
   isLoading: boolean;
@@ -15,6 +20,7 @@ type AuthContextType = {
   loginMutation: UseMutationResult<SelectUser, Error, LoginData>;
   logoutMutation: UseMutationResult<void, Error, void>;
   registerMutation: UseMutationResult<SelectUser, Error, InsertUser>;
+  changePasswordMutation: UseMutationResult<SelectUser, Error, ChangePasswordData>;
 };
 
 type LoginData = Pick<InsertUser, "email" | "password">;
@@ -82,6 +88,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     },
   });
 
+  const changePasswordMutation = useMutation({
+    mutationFn: async (data: ChangePasswordData) => {
+      const res = await apiRequest("POST", "/api/change-password", data);
+      return await res.json();
+    },
+    onSuccess: (user: SelectUser) => {
+      queryClient.setQueryData(["/api/user"], user);
+      toast({
+        title: "비밀번호가 변경되었습니다",
+        description: "새 비밀번호로 로그인하세요.",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "비밀번호 변경 실패",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
   return (
     <AuthContext.Provider
       value={{
@@ -91,6 +118,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         loginMutation,
         logoutMutation,
         registerMutation,
+        changePasswordMutation,
       }}
     >
       {children}
