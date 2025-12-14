@@ -21,15 +21,19 @@ import { ProtectedRoute } from "@/lib/protected-route";
 function Router() {
   return (
     <Switch>
+      {/* 모든 사용자 접근 가능 */}
       <ProtectedRoute path="/" component={Dashboard} />
       <ProtectedRoute path="/students" component={Students} />
-      <ProtectedRoute path="/teachers" component={Teachers} />
-      <ProtectedRoute path="/mokjangs" component={Mokjangs} />
       <ProtectedRoute path="/attendance" component={Attendance} />
-      <ProtectedRoute path="/long-absence" component={LongAbsence} />
-      <ProtectedRoute path="/stats" component={Stats} />
-      <ProtectedRoute path="/ministries" component={Ministries} />
-      <ProtectedRoute path="/sms" component={SmsPage} />
+
+      {/* 관리자만 접근 가능 */}
+      <ProtectedRoute path="/teachers" component={Teachers} requiredRole="admin" />
+      <ProtectedRoute path="/mokjangs" component={Mokjangs} requiredRole="admin" />
+      <ProtectedRoute path="/long-absence" component={LongAbsence} requiredRole="admin" />
+      <ProtectedRoute path="/stats" component={Stats} requiredRole="admin" />
+      <ProtectedRoute path="/ministries" component={Ministries} requiredRole="admin" />
+      <ProtectedRoute path="/sms" component={SmsPage} requiredRole="admin" />
+
       <Route path="/auth" component={AuthPage} />
       <Route component={NotFound} />
     </Switch>
