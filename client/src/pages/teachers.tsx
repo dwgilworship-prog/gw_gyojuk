@@ -47,7 +47,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Plus, UserCog, Search, Pencil, Trash2, Phone, Calendar, Crown, Cake } from "lucide-react";
+import { Plus, UserCog, Search, Pencil, Trash2, Phone, Calendar, Crown, Cake, Mail } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -269,6 +269,12 @@ export default function Teachers() {
     return u?.role || "teacher";
   };
 
+  const getTeacherEmail = (teacher: Teacher) => {
+    if (!users) return null;
+    const u = users.find(u => u.id === teacher.userId);
+    return u?.email || null;
+  };
+
   const getMokjangsForTeacher = (teacherId: string) => {
     if (!mokjangTeachers || !mokjangs) return [];
     const mtList = mokjangTeachers.filter(mt => mt.teacherId === teacherId);
@@ -391,6 +397,7 @@ export default function Teachers() {
                   <TableHeader>
                     <TableRow>
                       <TableHead>이름</TableHead>
+                      <TableHead className="hidden md:table-cell">이메일</TableHead>
                       <TableHead>역할</TableHead>
                       <TableHead className="hidden md:table-cell">연락처</TableHead>
                       <TableHead>사역부서</TableHead>
@@ -415,6 +422,9 @@ export default function Teachers() {
                         >
                           <TableCell className="font-medium" data-testid={`text-teacher-name-${teacher.id}`}>
                             {teacher.name}
+                          </TableCell>
+                          <TableCell className="hidden md:table-cell text-muted-foreground">
+                            {getTeacherEmail(teacher) || "-"}
                           </TableCell>
                           <TableCell>
                             {role === "admin" ? (
@@ -709,6 +719,12 @@ export default function Teachers() {
               </div>
 
               <div className="space-y-3 text-sm">
+                {getTeacherEmail(viewingTeacher) && (
+                  <div className="flex items-center gap-2">
+                    <Mail className="h-4 w-4 text-muted-foreground" />
+                    <span>{getTeacherEmail(viewingTeacher)}</span>
+                  </div>
+                )}
                 {viewingTeacher.phone && (
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">

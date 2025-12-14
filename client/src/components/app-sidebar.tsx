@@ -32,6 +32,7 @@ import {
 const adminMenuItems = [
   { title: "대시보드", url: "/", icon: LayoutDashboard },
   { title: "학생 관리", url: "/students", icon: Users },
+  { title: "교사 관리", url: "/teachers", icon: UserCog },
   { title: "목장 관리", url: "/mokjangs", icon: BookOpen },
   { title: "출석 체크", url: "/attendance", icon: UserCheck },
   { title: "장기결석자", url: "/long-absence", icon: AlertTriangle },

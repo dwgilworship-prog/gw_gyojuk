@@ -146,6 +146,12 @@ export default function Students() {
     queryKey: ["/api/mokjang-teachers"],
   });
 
+  // 교사일 경우 자기 목장 정보 조회
+  const myTeacher = teachers?.find(t => t.userId === user?.id);
+  const myMokjangIds = mokjangTeachers
+    ?.filter(mt => mt.teacherId === myTeacher?.id)
+    .map(mt => mt.mokjangId) || [];
+
   const { data: ministries } = useQuery<Ministry[]>({
     queryKey: ["/api/ministries"],
   });
@@ -400,6 +406,13 @@ export default function Students() {
     if (!students) return [];
 
     let result = students.filter((student) => {
+      // 교사일 경우 자기 목장 학생만 표시
+      if (user?.role === "teacher" && myMokjangIds.length > 0) {
+        if (!student.mokjangId || !myMokjangIds.includes(student.mokjangId)) {
+          return false;
+        }
+      }
+
       const matchesSearch =
         student.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         student.school?.toLowerCase().includes(searchQuery.toLowerCase());
@@ -435,7 +448,7 @@ export default function Students() {
     });
 
     return result;
-  }, [students, searchQuery, gradeFilter, mokjangFilter, statusFilter, ministryFilter, ministryMembers, sortField, sortOrder]);
+  }, [students, searchQuery, gradeFilter, mokjangFilter, statusFilter, ministryFilter, ministryMembers, sortField, sortOrder, user?.role, myMokjangIds]);
 
   const totalPages = Math.ceil(filteredAndSortedStudents.length / pageSize);
   const paginatedStudents = filteredAndSortedStudents.slice(

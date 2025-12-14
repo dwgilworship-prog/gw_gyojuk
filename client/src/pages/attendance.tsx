@@ -61,25 +61,28 @@ export default function Attendance() {
 
   const { data: teachers } = useQuery<Teacher[]>({
     queryKey: ["/api/teachers"],
-    enabled: user?.role === "teacher",
   });
 
-  const { data: myMokjangTeachers } = useQuery<MokjangTeacher[]>({
-    queryKey: ["/api/teachers", "my", "mokjangs"],
-    queryFn: async () => {
-      if (user?.role !== "teacher" || !teachers) return [];
-      const myTeacher = teachers.find((t) => t.userId === user.id);
-      if (!myTeacher) return [];
-      const res = await fetch(`/api/teachers/${myTeacher.id}/mokjangs`);
-      if (!res.ok) return [];
-      return res.json();
-    },
-    enabled: user?.role === "teacher" && !!teachers,
+  const { data: allMokjangTeachers } = useQuery<MokjangTeacher[]>({
+    queryKey: ["/api/mokjang-teachers"],
   });
 
-  const availableMokjangs = user?.role === "admin" 
-    ? mokjangs 
-    : mokjangs?.filter((m) => myMokjangTeachers?.some((mt) => mt.mokjangId === m.id));
+  // 현재 로그인한 교사 정보
+  const myTeacher = teachers?.find(t => t.userId === user?.id);
+  const myMokjangIds = allMokjangTeachers
+    ?.filter(mt => mt.teacherId === myTeacher?.id)
+    .map(mt => mt.mokjangId) || [];
+
+  const availableMokjangs = user?.role === "admin"
+    ? mokjangs
+    : mokjangs?.filter((m) => myMokjangIds.includes(m.id));
+
+  // 교사일 경우 첫 번째 목장을 자동 선택
+  useEffect(() => {
+    if (user?.role === "teacher" && availableMokjangs && availableMokjangs.length > 0 && !selectedMokjangId) {
+      setSelectedMokjangId(availableMokjangs[0].id);
+    }
+  }, [user?.role, availableMokjangs, selectedMokjangId]);
 
   const isAllMokjangsSelected = selectedMokjangId === "all";
 

@@ -40,13 +40,13 @@ import {
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Plus, BookOpen, Search, Pencil, Trash2, Users, UserPlus, X } from "lucide-react";
+import { Plus, BookOpen, Search, Pencil, Trash2, Users, UserPlus, X, Phone, GraduationCap, User } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
-import type { Mokjang, Teacher, MokjangTeacher } from "@shared/schema";
+import type { Mokjang, Teacher, MokjangTeacher, Student } from "@shared/schema";
 import { useAuth } from "@/hooks/use-auth";
 
 const mokjangFormSchema = z.object({
@@ -67,6 +67,7 @@ export default function Mokjangs() {
   const [deletingMokjang, setDeletingMokjang] = useState<Mokjang | null>(null);
   const [assigningMokjang, setAssigningMokjang] = useState<Mokjang | null>(null);
   const [selectedTeacherId, setSelectedTeacherId] = useState<string>("");
+  const [viewingMokjang, setViewingMokjang] = useState<Mokjang | null>(null);
 
   const { data: mokjangs, isLoading } = useQuery<Mokjang[]>({
     queryKey: ["/api/mokjangs"],
@@ -74,6 +75,14 @@ export default function Mokjangs() {
 
   const { data: teachers } = useQuery<Teacher[]>({
     queryKey: ["/api/teachers"],
+  });
+
+  const { data: students } = useQuery<Student[]>({
+    queryKey: ["/api/students"],
+  });
+
+  const { data: allMokjangTeachers } = useQuery<MokjangTeacher[]>({
+    queryKey: ["/api/mokjang-teachers"],
   });
 
   const { data: mokjangTeachers } = useQuery<MokjangTeacher[]>({
@@ -244,6 +253,19 @@ export default function Mokjangs() {
     (t) => !getAssignedTeacherIds().includes(t.id)
   );
 
+  const getMokjangTeachers = (mokjangId: string) => {
+    if (!allMokjangTeachers || !teachers) return [];
+    const teacherIds = allMokjangTeachers
+      .filter(mt => mt.mokjangId === mokjangId)
+      .map(mt => mt.teacherId);
+    return teachers.filter(t => teacherIds.includes(t.id));
+  };
+
+  const getMokjangStudents = (mokjangId: string) => {
+    if (!students) return [];
+    return students.filter(s => s.mokjangId === mokjangId);
+  };
+
   return (
     <DashboardLayout title="목장 관리">
       <div className="p-4 md:p-6 space-y-4">
@@ -280,7 +302,12 @@ export default function Mokjangs() {
         ) : filteredMokjangs && filteredMokjangs.length > 0 ? (
           <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
             {filteredMokjangs.map((mokjang) => (
-              <Card key={mokjang.id} data-testid={`card-mokjang-${mokjang.id}`}>
+              <Card
+                key={mokjang.id}
+                className="cursor-pointer hover:shadow-md transition-shadow"
+                onClick={() => setViewingMokjang(mokjang)}
+                data-testid={`card-mokjang-${mokjang.id}`}
+              >
                 <CardContent className="p-4">
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0 flex-1">
@@ -301,7 +328,7 @@ export default function Mokjangs() {
                         )}
                       </div>
                     </div>
-                    <div className="flex items-center gap-1 flex-shrink-0">
+                    <div className="flex items-center gap-1 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
                       {user?.role === "admin" && (
                         <>
                           <Button
@@ -521,6 +548,106 @@ export default function Mokjangs() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <Dialog open={!!viewingMokjang} onOpenChange={() => setViewingMokjang(null)}>
+        <DialogContent className="max-w-lg max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <BookOpen className="h-5 w-5" />
+              {viewingMokjang?.name}
+            </DialogTitle>
+            {viewingMokjang?.description && (
+              <p className="text-sm text-muted-foreground">{viewingMokjang.description}</p>
+            )}
+          </DialogHeader>
+          {viewingMokjang && (
+            <div className="space-y-6">
+              <div className="flex items-center gap-4 text-sm">
+                {viewingMokjang.targetGrade && (
+                  <div className="flex items-center gap-1 text-muted-foreground">
+                    <GraduationCap className="h-4 w-4" />
+                    <span>{viewingMokjang.targetGrade}</span>
+                  </div>
+                )}
+                <Badge variant={viewingMokjang.isActive ? "default" : "secondary"}>
+                  {viewingMokjang.isActive ? "활성" : "비활성"}
+                </Badge>
+              </div>
+
+              <div>
+                <h3 className="font-semibold text-sm mb-3 flex items-center gap-2">
+                  <User className="h-4 w-4" />
+                  담당 교사 ({getMokjangTeachers(viewingMokjang.id).length}명)
+                </h3>
+                {getMokjangTeachers(viewingMokjang.id).length > 0 ? (
+                  <div className="space-y-2">
+                    {getMokjangTeachers(viewingMokjang.id).map((teacher) => (
+                      <div
+                        key={teacher.id}
+                        className="flex items-center justify-between p-3 bg-muted/50 rounded-lg"
+                      >
+                        <div>
+                          <p className="font-medium">{teacher.name}</p>
+                        </div>
+                        {teacher.phone && (
+                          <Button size="sm" variant="ghost" asChild>
+                            <a href={`tel:${teacher.phone}`} className="flex items-center gap-1">
+                              <Phone className="h-4 w-4" />
+                              <span className="text-xs">{teacher.phone}</span>
+                            </a>
+                          </Button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground">담당 교사가 없습니다.</p>
+                )}
+              </div>
+
+              <div>
+                <h3 className="font-semibold text-sm mb-3 flex items-center gap-2">
+                  <GraduationCap className="h-4 w-4" />
+                  소속 학생 ({getMokjangStudents(viewingMokjang.id).length}명)
+                </h3>
+                {getMokjangStudents(viewingMokjang.id).length > 0 ? (
+                  <div className="space-y-2">
+                    {getMokjangStudents(viewingMokjang.id).map((student) => (
+                      <div
+                        key={student.id}
+                        className="flex items-center justify-between p-3 bg-muted/50 rounded-lg"
+                      >
+                        <div>
+                          <p className="font-medium">{student.name}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {[student.school, student.grade].filter(Boolean).join(' ') || '-'}
+                          </p>
+                        </div>
+                        {student.phone && (
+                          <Button size="sm" variant="ghost" asChild>
+                            <a href={`tel:${student.phone}`} className="flex items-center gap-1">
+                              <Phone className="h-4 w-4" />
+                              <span className="text-xs">{student.phone}</span>
+                            </a>
+                          </Button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground">소속된 학생이 없습니다.</p>
+                )}
+              </div>
+
+              <DialogFooter>
+                <Button onClick={() => setViewingMokjang(null)}>
+                  닫기
+                </Button>
+              </DialogFooter>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </DashboardLayout>
   );
 }
