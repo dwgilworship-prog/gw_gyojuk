@@ -19,7 +19,7 @@ import {
     TableRow,
 } from "@/components/ui/table";
 import { Search, User, Users } from "lucide-react";
-import type { Student, Mokjang } from "@shared/schema";
+import type { Student, Mokjang, Ministry, MinistryStudent } from "@shared/schema";
 import { Skeleton } from "@/components/ui/skeleton";
 
 interface RecipientSelectorProps {
@@ -31,6 +31,7 @@ export function RecipientSelector({ onSelectionChange }: RecipientSelectorProps)
     const [searchQuery, setSearchQuery] = useState("");
     const [gradeFilter, setGradeFilter] = useState("all");
     const [mokjangFilter, setMokjangFilter] = useState("all");
+    const [ministryFilter, setMinistryFilter] = useState("all");
     const [selectedStudentIds, setSelectedStudentIds] = useState<Set<string>>(new Set());
 
     // Queries
@@ -40,6 +41,14 @@ export function RecipientSelector({ onSelectionChange }: RecipientSelectorProps)
 
     const { data: mokjangs } = useQuery<Mokjang[]>({
         queryKey: ["/api/mokjangs"],
+    });
+
+    const { data: ministries } = useQuery<Ministry[]>({
+        queryKey: ["/api/ministries"],
+    });
+
+    const { data: ministryMembers } = useQuery<{ students: MinistryStudent[] }>({
+        queryKey: ["/api/ministry-members"],
     });
 
     // Filter Logic
@@ -58,9 +67,17 @@ export function RecipientSelector({ onSelectionChange }: RecipientSelectorProps)
             // Mokjang
             if (mokjangFilter !== "all" && student.mokjangId !== mokjangFilter) return false;
 
+            // Ministry
+            if (ministryFilter !== "all") {
+                const studentMinistries = ministryMembers?.students
+                    ?.filter(ms => ms.studentId === student.id)
+                    .map(ms => ms.ministryId) || [];
+                if (!studentMinistries.includes(ministryFilter)) return false;
+            }
+
             return true;
         });
-    }, [students, searchQuery, gradeFilter, mokjangFilter]);
+    }, [students, searchQuery, gradeFilter, mokjangFilter, ministryFilter, ministryMembers]);
 
     // When targetType changes, reset all selections
     useEffect(() => {
@@ -220,6 +237,18 @@ export function RecipientSelector({ onSelectionChange }: RecipientSelectorProps)
                         <SelectContent>
                             <SelectItem value="all">전체 목장</SelectItem>
                             {mokjangs?.map(m => (
+                                <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+
+                    <Select value={ministryFilter} onValueChange={setMinistryFilter}>
+                        <SelectTrigger className="w-[120px] h-8 text-xs">
+                            <SelectValue placeholder="사역부서" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="all">전체 부서</SelectItem>
+                            {ministries?.map(m => (
                                 <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>
                             ))}
                         </SelectContent>

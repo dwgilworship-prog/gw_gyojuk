@@ -47,7 +47,16 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Plus, UserCog, Search, Pencil, Trash2, Phone, Calendar, Crown, Cake, Mail } from "lucide-react";
+import {
+  Plus, UserCog, Search, Pencil, Trash2, Phone, Calendar, Crown, Cake, Mail,
+  LayoutGrid, LayoutList, MoreVertical, Users
+} from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -85,6 +94,7 @@ export default function Teachers() {
 
   const [roleFilter, setRoleFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [viewMode, setViewMode] = useState<"table" | "card">("table");
 
   const { data: teachers, isLoading } = useQuery<Teacher[]>({
     queryKey: ["/api/teachers"],
@@ -376,6 +386,25 @@ export default function Teachers() {
                 <SelectItem value="resigned">사임</SelectItem>
               </SelectContent>
             </Select>
+
+            <div className="ml-auto hidden md:flex items-center gap-1">
+              <Button
+                size="icon"
+                variant={viewMode === "table" ? "default" : "ghost"}
+                onClick={() => setViewMode("table")}
+                data-testid="button-view-table"
+              >
+                <LayoutList className="h-4 w-4" />
+              </Button>
+              <Button
+                size="icon"
+                variant={viewMode === "card" ? "default" : "ghost"}
+                onClick={() => setViewMode("card")}
+                data-testid="button-view-card"
+              >
+                <LayoutGrid className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
         </div>
 
@@ -390,103 +419,205 @@ export default function Teachers() {
             </CardContent>
           </Card>
         ) : filteredTeachers && filteredTeachers.length > 0 ? (
-          <Card>
-            <CardContent className="p-0">
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>이름</TableHead>
-                      <TableHead className="hidden md:table-cell">이메일</TableHead>
-                      <TableHead>역할</TableHead>
-                      <TableHead className="hidden md:table-cell">연락처</TableHead>
-                      <TableHead>사역부서</TableHead>
-                      <TableHead>담당 목장</TableHead>
-                      <TableHead className="hidden lg:table-cell">담당학생</TableHead>
-                      <TableHead>상태</TableHead>
-                      {user?.role === "admin" && <TableHead className="w-24">관리</TableHead>}
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredTeachers.map((teacher) => {
-                      const role = getTeacherRole(teacher);
-                      const assignedMokjangs = getMokjangsForTeacher(teacher.id);
-                      const studentCount = getStudentCountForTeacher(teacher.id);
+          <>
+            {/* Desktop Table View */}
+            <div className={`hidden md:block ${viewMode === "card" ? "md:hidden" : ""}`}>
+              <Card>
+                <CardContent className="p-0">
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>이름</TableHead>
+                          <TableHead className="hidden md:table-cell">이메일</TableHead>
+                          <TableHead>역할</TableHead>
+                          <TableHead className="hidden md:table-cell">연락처</TableHead>
+                          <TableHead>사역부서</TableHead>
+                          <TableHead>담당 목장</TableHead>
+                          <TableHead className="hidden lg:table-cell">담당학생</TableHead>
+                          <TableHead>상태</TableHead>
+                          {user?.role === "admin" && <TableHead className="w-24">관리</TableHead>}
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {filteredTeachers.map((teacher) => {
+                          const role = getTeacherRole(teacher);
+                          const assignedMokjangs = getMokjangsForTeacher(teacher.id);
+                          const studentCount = getStudentCountForTeacher(teacher.id);
 
-                      return (
-                        <TableRow
-                          key={teacher.id}
-                          className="cursor-pointer"
+                          return (
+                            <TableRow
+                              key={teacher.id}
+                              className="cursor-pointer"
+                              onClick={() => setViewingTeacher(teacher)}
+                              data-testid={`row-teacher-${teacher.id}`}
+                            >
+                              <TableCell className="font-medium" data-testid={`text-teacher-name-${teacher.id}`}>
+                                {teacher.name}
+                              </TableCell>
+                              <TableCell className="hidden md:table-cell text-muted-foreground">
+                                {getTeacherEmail(teacher) || "-"}
+                              </TableCell>
+                              <TableCell>
+                                {role === "admin" ? (
+                                  <div className="flex items-center gap-1">
+                                    <Crown className="h-4 w-4 text-yellow-500" />
+                                    <span>관리자</span>
+                                  </div>
+                                ) : (
+                                  <span>교사</span>
+                                )}
+                              </TableCell>
+                              <TableCell className="hidden md:table-cell">
+                                {maskPhone(teacher.phone)}
+                              </TableCell>
+                              <TableCell>
+                                <div className="flex flex-wrap gap-1">
+                                  {getTeacherMinistries(teacher.id).map((name, i) => (
+                                    <Badge key={i} variant="outline" className="text-xs">{name}</Badge>
+                                  ))}
+                                </div>
+                              </TableCell>
+                              <TableCell>
+                                {assignedMokjangs.length > 0 ? assignedMokjangs.join(", ") : "-"}
+                              </TableCell>
+                              <TableCell className="hidden lg:table-cell">
+                                {studentCount > 0 ? `${studentCount}명` : "-"}
+                              </TableCell>
+                              <TableCell>
+                                <Badge variant={statusLabels[teacher.status || "active"].variant}>
+                                  {statusLabels[teacher.status || "active"].label}
+                                </Badge>
+                              </TableCell>
+                              {user?.role === "admin" && (
+                                <TableCell onClick={(e) => e.stopPropagation()}>
+                                  <div className="flex items-center gap-1">
+                                    <Button
+                                      size="icon"
+                                      variant="ghost"
+                                      onClick={() => handleOpenEdit(teacher)}
+                                      data-testid={`button-edit-teacher-${teacher.id}`}
+                                    >
+                                      <Pencil className="h-4 w-4" />
+                                    </Button>
+                                    <Button
+                                      size="icon"
+                                      variant="ghost"
+                                      onClick={() => setDeletingTeacher(teacher)}
+                                      data-testid={`button-delete-teacher-${teacher.id}`}
+                                    >
+                                      <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                  </div>
+                                </TableCell>
+                              )}
+                            </TableRow>
+                          );
+                        })}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Mobile/Card View */}
+            <div className={`grid gap-3 md:grid-cols-2 lg:grid-cols-3 ${viewMode === "table" ? "md:hidden" : ""}`}>
+              {filteredTeachers.map((teacher) => {
+                const role = getTeacherRole(teacher);
+                const assignedMokjangs = getMokjangsForTeacher(teacher.id);
+                const studentCount = getStudentCountForTeacher(teacher.id);
+
+                return (
+                  <Card key={teacher.id} data-testid={`card-teacher-${teacher.id}`}>
+                    <CardContent className="p-4">
+                      <div className="flex items-start justify-between gap-2">
+                        <div
+                          className="min-w-0 flex-1 cursor-pointer"
                           onClick={() => setViewingTeacher(teacher)}
-                          data-testid={`row-teacher-${teacher.id}`}
                         >
-                          <TableCell className="font-medium" data-testid={`text-teacher-name-${teacher.id}`}>
-                            {teacher.name}
-                          </TableCell>
-                          <TableCell className="hidden md:table-cell text-muted-foreground">
-                            {getTeacherEmail(teacher) || "-"}
-                          </TableCell>
-                          <TableCell>
-                            {role === "admin" ? (
-                              <div className="flex items-center gap-1">
-                                <Crown className="h-4 w-4 text-yellow-500" />
-                                <span>관리자</span>
-                              </div>
-                            ) : (
-                              <span>교사</span>
+                          <div className="flex items-center gap-2 mb-1">
+                            <h3 className="font-medium truncate text-base" data-testid={`text-teacher-name-${teacher.id}`}>
+                              {teacher.name}
+                            </h3>
+                            {role === "admin" && (
+                              <Crown className="h-4 w-4 text-yellow-500 flex-shrink-0" />
                             )}
-                          </TableCell>
-                          <TableCell className="hidden md:table-cell">
-                            {maskPhone(teacher.phone)}
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex flex-wrap gap-1">
-                              {getTeacherMinistries(teacher.id).map((name, i) => (
-                                <Badge key={i} variant="outline" className="text-xs">{name}</Badge>
-                              ))}
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            {assignedMokjangs.length > 0 ? assignedMokjangs.join(", ") : "-"}
-                          </TableCell>
-                          <TableCell className="hidden lg:table-cell">
-                            {studentCount > 0 ? `${studentCount}명` : "-"}
-                          </TableCell>
-                          <TableCell>
-                            <Badge variant={statusLabels[teacher.status || "active"].variant}>
+                            <Badge variant={statusLabels[teacher.status || "active"].variant} className="text-xs flex-shrink-0">
                               {statusLabels[teacher.status || "active"].label}
                             </Badge>
-                          </TableCell>
-                          {user?.role === "admin" && (
-                            <TableCell onClick={(e) => e.stopPropagation()}>
-                              <div className="flex items-center gap-1">
-                                <Button
-                                  size="icon"
-                                  variant="ghost"
-                                  onClick={() => handleOpenEdit(teacher)}
-                                  data-testid={`button-edit-teacher-${teacher.id}`}
-                                >
-                                  <Pencil className="h-4 w-4" />
-                                </Button>
-                                <Button
-                                  size="icon"
-                                  variant="ghost"
-                                  onClick={() => setDeletingTeacher(teacher)}
-                                  data-testid={`button-delete-teacher-${teacher.id}`}
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
+                          </div>
+                          <div className="text-sm text-muted-foreground space-y-1">
+                            {getTeacherEmail(teacher) && (
+                              <div className="flex items-center gap-2">
+                                <Mail className="h-3 w-3" />
+                                <span className="truncate">{getTeacherEmail(teacher)}</span>
                               </div>
-                            </TableCell>
-                          )}
-                        </TableRow>
-                      );
-                    })}
-                  </TableBody>
-                </Table>
-              </div>
-            </CardContent>
-          </Card>
+                            )}
+                            {teacher.phone && (
+                              <div className="flex items-center gap-2">
+                                <Phone className="h-3 w-3" />
+                                <span>{maskPhone(teacher.phone)}</span>
+                              </div>
+                            )}
+                            {assignedMokjangs.length > 0 && (
+                              <div className="flex items-center gap-2">
+                                <Users className="h-3 w-3" />
+                                <span className="truncate">{assignedMokjangs.join(", ")}</span>
+                              </div>
+                            )}
+                            {getTeacherMinistries(teacher.id).length > 0 && (
+                              <div className="flex flex-wrap gap-1 mt-1">
+                                {getTeacherMinistries(teacher.id).map((name, i) => (
+                                  <Badge key={i} variant="outline" className="text-xs">{name}</Badge>
+                                ))}
+                              </div>
+                            )}
+                            {studentCount > 0 && (
+                              <div className="text-xs text-muted-foreground">
+                                담당학생 {studentCount}명
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex flex-col gap-1 flex-shrink-0">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button size="icon" variant="ghost" className="h-8 w-8">
+                                <MoreVertical className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              {teacher.phone && (
+                                <DropdownMenuItem asChild>
+                                  <a href={`tel:${teacher.phone}`} className="flex items-center w-full">
+                                    <Phone className="h-4 w-4 mr-2" />
+                                    전화걸기
+                                  </a>
+                                </DropdownMenuItem>
+                              )}
+                              {user?.role === "admin" && (
+                                <>
+                                  <DropdownMenuItem onClick={() => handleOpenEdit(teacher)}>
+                                    <Pencil className="h-4 w-4 mr-2" />
+                                    수정
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem onClick={() => setDeletingTeacher(teacher)} className="text-destructive">
+                                    <Trash2 className="h-4 w-4 mr-2" />
+                                    삭제
+                                  </DropdownMenuItem>
+                                </>
+                              )}
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          </>
         ) : (
           <Card>
             <CardContent className="flex flex-col items-center justify-center py-12">
