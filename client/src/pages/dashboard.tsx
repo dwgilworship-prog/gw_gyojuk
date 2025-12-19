@@ -108,7 +108,25 @@ export default function Dashboard() {
 
           <Card data-testid="card-stat-attendance">
             <CardHeader className="flex flex-row items-center justify-between gap-2 p-3 pb-1 md:p-6 md:pb-2">
-              <CardTitle className="text-xs md:text-sm font-medium">출석률</CardTitle>
+              <CardTitle className="text-xs md:text-sm font-medium">
+                <span>출석률</span>
+                <span className="ml-1 text-[10px] md:text-xs font-normal text-muted-foreground">
+                  {(() => {
+                    const now = new Date();
+                    // 이번 주 일요일 계산 (서버 로직과 동일)
+                    const sunday = new Date(now);
+                    sunday.setDate(now.getDate() - now.getDay());
+
+                    const month = sunday.getMonth() + 1;
+                    const day = sunday.getDate();
+
+                    // 일요일 날짜 기준으로 주차 계산
+                    const weekOfMonth = Math.ceil(day / 7);
+
+                    return `${month}월 ${weekOfMonth}째주(${month}/${day})`;
+                  })()}
+                </span>
+              </CardTitle>
               <UserCheck className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent className="p-3 pt-0 md:p-6 md:pt-0">
