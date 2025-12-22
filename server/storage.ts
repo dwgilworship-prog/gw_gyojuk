@@ -59,6 +59,7 @@ export interface IStorage {
   getAttendanceByDate(date: string): Promise<AttendanceLog[]>;
   getAttendanceByDateRange(startDate: string, endDate: string): Promise<AttendanceLog[]>;
   saveAttendance(logs: InsertAttendanceLog[]): Promise<AttendanceLog[]>;
+  deleteAttendance(studentId: string, date: string): Promise<boolean>;
 
   getReport(id: string): Promise<Report | undefined>;
   getReportsByMokjangId(mokjangId: string): Promise<Report[]>;
@@ -315,6 +316,15 @@ export class DatabaseStorage implements IStorage {
       }
     }
     return results;
+  }
+
+  async deleteAttendance(studentId: string, date: string): Promise<boolean> {
+    const result = await db.delete(attendanceLogs)
+      .where(and(
+        eq(attendanceLogs.studentId, studentId),
+        eq(attendanceLogs.date, date)
+      ));
+    return (result.rowCount ?? 0) > 0;
   }
 
   async getReport(id: string): Promise<Report | undefined> {

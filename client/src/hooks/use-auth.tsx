@@ -77,7 +77,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       await apiRequest("POST", "/api/logout");
     },
     onSuccess: () => {
-      queryClient.setQueryData(["/api/user"], null);
+      // 모든 캐시 초기화
+      queryClient.clear();
     },
     onError: (error: Error) => {
       toast({

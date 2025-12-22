@@ -31,12 +31,11 @@ import {
     PaginationNext,
     PaginationPrevious,
 } from "@/components/ui/pagination";
-import { RefreshCw, Search, CalendarIcon } from "lucide-react";
+import { RefreshCw, Search, CalendarIcon, Loader2 } from "lucide-react";
 import { format } from "date-fns";
 import { ko } from "date-fns/locale";
 import { SmsHistory, SmsHistoryFilter, filterAndPaginateHistory } from "@/lib/sms-utils";
 import { SendDetailModal } from "./send-detail-modal";
-import { updateHistoryStatus } from "@/lib/sms-utils";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 
@@ -50,6 +49,7 @@ const PAGE_SIZE = 10;
 export function SendHistory({ history, onRefresh }: SendHistoryProps) {
     const { toast } = useToast();
     const [selectedItem, setSelectedItem] = useState<SmsHistory | null>(null);
+    const [cancellingId, setCancellingId] = useState<string | null>(null);
 
     // Filter input states
     const [startDate, setStartDate] = useState<Date | undefined>(undefined);
@@ -91,12 +91,39 @@ export function SendHistory({ history, onRefresh }: SendHistoryProps) {
         return filterAndPaginateHistory(history, appliedFilter, currentPage, PAGE_SIZE);
     }, [history, appliedFilter, currentPage]);
 
-    const handleCancel = (id: string, e: React.MouseEvent) => {
+    const handleCancel = async (id: string, e: React.MouseEvent) => {
         e.stopPropagation();
-        if (confirm("정말 예약 발송을 취소하시겠습니까?")) {
-            updateHistoryStatus(id, 'cancelled');
-            toast({ title: "예약 취소됨", description: "발송 예약이 취소되었습니다." });
-            onRefresh();
+        if (!confirm("정말 예약 발송을 취소하시겠습니까?")) return;
+
+        setCancellingId(id);
+        try {
+            const res = await fetch("/api/sms/cancel", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                credentials: "include",
+                body: JSON.stringify({ mid: id }),
+            });
+
+            const result = await res.json();
+
+            if (result.result_code > 0) {
+                toast({ title: "예약 취소됨", description: "발송 예약이 취소되었습니다." });
+                onRefresh();
+            } else {
+                toast({
+                    title: "취소 실패",
+                    description: result.message || "예약 취소에 실패했습니다.",
+                    variant: "destructive"
+                });
+            }
+        } catch (error: any) {
+            toast({
+                title: "취소 실패",
+                description: error.message || "예약 취소 중 오류가 발생했습니다.",
+                variant: "destructive"
+            });
+        } finally {
+            setCancellingId(null);
         }
     };
 
@@ -278,8 +305,13 @@ export function SendHistory({ history, onRefresh }: SendHistoryProps) {
                                                 size="sm"
                                                 className="h-6 text-xs"
                                                 onClick={(e) => handleCancel(item.id, e)}
+                                                disabled={cancellingId === item.id}
                                             >
-                                                취소
+                                                {cancellingId === item.id ? (
+                                                    <Loader2 className="w-3 h-3 animate-spin" />
+                                                ) : (
+                                                    "취소"
+                                                )}
                                             </Button>
                                         ) : (
                                             <Button variant="secondary" size="sm" className="h-6 text-xs">상세</Button>

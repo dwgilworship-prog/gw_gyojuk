@@ -150,6 +150,7 @@ export const students = pgTable("students", {
   gender: genderEnum("gender"),
   baptism: baptismEnum("baptism").default("none"),
   status: studentStatusEnum("status").notNull().default("ACTIVE"),
+  memo: text("memo"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });

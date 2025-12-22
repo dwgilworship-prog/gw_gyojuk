@@ -9,6 +9,7 @@ import { useAuth } from "@/hooks/use-auth";
 import type { Student } from "@shared/schema";
 import { format } from "date-fns";
 import { ko } from "date-fns/locale";
+import TeacherDashboard from "./teacher-dashboard";
 
 interface Stats {
   studentCount: number;
@@ -53,6 +54,11 @@ export default function Dashboard() {
     queryKey: ["/api/dashboard-widgets"],
     enabled: isAdmin,
   });
+
+  // 교사인 경우 전용 대시보드 표시
+  if (!isAdmin) {
+    return <TeacherDashboard />;
+  }
 
   return (
     <DashboardLayout title="대시보드">
@@ -270,31 +276,6 @@ export default function Dashboard() {
           </div>
         )}
 
-        {!isAdmin && (
-          <div className="grid gap-4 md:grid-cols-2">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base">최근 활동</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-muted-foreground">
-                  아직 활동 기록이 없습니다.
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base">빠른 작업</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-2">
-                <p className="text-sm text-muted-foreground">
-                  사이드 메뉴에서 원하는 기능을 선택하세요.
-                </p>
-              </CardContent>
-            </Card>
-          </div>
-        )}
       </div>
     </DashboardLayout>
   );

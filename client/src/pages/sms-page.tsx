@@ -4,34 +4,84 @@ import { RecipientSelector } from "@/components/sms/recipient-selector";
 import { MessageComposer } from "@/components/sms/message-composer";
 import { SendHistory } from "@/components/sms/send-history";
 import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import {
-    SmsHistory,
-    SmsRecipient,
-    getHistory,
-    saveHistory,
-    processTemplate,
-    getTemplates
-} from "@/lib/sms-utils";
-import { v4 as uuidv4 } from "uuid";
+import { getTemplates } from "@/lib/sms-utils";
 import { useAuth } from "@/hooks/use-auth";
 import { TemplateManager } from "@/components/sms/template-manager";
-import { Button } from "@/components/ui/button";
+import { format } from "date-fns";
+
+interface AligoHistoryItem {
+    mid: string;
+    type: string;
+    sender: string;
+    sms_count: string;
+    reserve_state: string;
+    msg: string;
+    fail_count: string;
+    reg_date: string;
+    reserve: string;
+}
+
+interface AligoRemain {
+    result_code: number;
+    message: string;
+    SMS_CNT?: number;
+    LMS_CNT?: number;
+    MMS_CNT?: number;
+}
 
 export default function SmsPage() {
     const { user } = useAuth();
     const { toast } = useToast();
-    const [history, setHistory] = useState<SmsHistory[]>([]);
+    const [aligoHistory, setAligoHistory] = useState<AligoHistoryItem[]>([]);
     const [recipients, setRecipients] = useState<any[]>([]);
     const [templates, setTemplates] = useState<any[]>([]);
+    const [remain, setRemain] = useState<AligoRemain | null>(null);
+    const [isLoading, setIsLoading] = useState(false);
+    const [isSending, setIsSending] = useState(false);
 
     useEffect(() => {
         refreshHistory();
         refreshTemplates();
+        fetchRemain();
     }, []);
 
-    const refreshHistory = () => {
-        setHistory(getHistory());
+    const refreshHistory = async () => {
+        setIsLoading(true);
+        try {
+            const res = await fetch("/api/sms/history?page=1&page_size=100", {
+                credentials: "include",
+            });
+            if (res.ok) {
+                const data = await res.json();
+                if (data.result_code > 0 && data.list) {
+                    setAligoHistory(data.list);
+                } else if (data.result_code < 0) {
+                    console.error("Aligo API error:", data.message);
+                }
+            }
+        } catch (error) {
+            console.error("Failed to fetch SMS history:", error);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const fetchRemain = async () => {
+        try {
+            const res = await fetch("/api/sms/remain", {
+                credentials: "include",
+            });
+            if (res.ok) {
+                const data = await res.json();
+                if (data.result_code > 0) {
+                    setRemain(data);
+                }
+            }
+        } catch (error) {
+            console.error("Failed to fetch remain:", error);
+        }
     };
 
     const refreshTemplates = () => {
@@ -39,11 +89,10 @@ export default function SmsPage() {
     };
 
     const handleSelectionChange = (ids: string[], type: 'student' | 'parent' | 'both', recipientsData: any[]) => {
-        // Deduping is already handled relatively well by RecipientSelector but let's be safe
         setRecipients(recipientsData);
     };
 
-    const handleSend = (data: {
+    const handleSend = async (data: {
         type: 'SMS' | 'LMS';
         title?: string;
         content: string;
@@ -55,57 +104,143 @@ export default function SmsPage() {
             return;
         }
 
-        // Mock Sending Process
-        toast({
-            title: "API 미연동 상태입니다",
-            description: "실제 발송 대신 발송 내역에 저장됩니다.",
-            // variant: "default", 
-        });
+        setIsSending(true);
 
-        // Create History Record
-        const historyItem: SmsHistory = {
-            id: uuidv4(),
-            sentAt: new Date().toISOString(),
-            type: data.type,
-            title: data.title,
-            content: data.content,
-            recipientCount: recipients.length,
-            successCount: recipients.length, // Mock success
-            failCount: 0,
-            status: data.isScheduled ? 'scheduled' : 'completed',
-            scheduledAt: data.scheduledAt?.toISOString(),
-            recipients: recipients.map(r => ({
-                name: r.name,
-                phone: r.phone,
-                studentId: r.studentId,
-                type: r.type,
-                status: 'success'
-            }))
-        };
+        try {
+            // 수신자 전화번호 목록 생성 (쉼표로 구분, 최대 1000명)
+            const receiverList = recipients
+                .map(r => r.phone?.replace(/-/g, ''))
+                .filter(Boolean);
 
-        saveHistory(historyItem);
-        refreshHistory();
+            if (receiverList.length === 0) {
+                toast({ title: "유효한 전화번호가 없습니다", variant: "destructive" });
+                setIsSending(false);
+                return;
+            }
 
-        if (data.isScheduled) {
-            toast({ title: "예약되었습니다", description: `${recipients.length}명에게 예약 발송됩니다.` });
-        } else {
-            toast({ title: "발송되었습니다", description: `${recipients.length}명에게 문자를 발송했습니다.` });
+            // %이름% 등 치환 변수가 있으면 destination 파라미터 생성
+            const hasNameVariable = data.content.includes('%고객명%') || data.content.includes('%이름%');
+            let destination = '';
+            if (hasNameVariable) {
+                destination = recipients
+                    .map(r => `${r.phone?.replace(/-/g, '')}|${r.name}`)
+                    .join(',');
+            }
+
+            // 예약 발송 시간 설정
+            let rdate, rtime;
+            if (data.isScheduled && data.scheduledAt) {
+                rdate = format(data.scheduledAt, 'yyyyMMdd');
+                rtime = format(data.scheduledAt, 'HHmm');
+            }
+
+            // 메시지 내용에서 %이름% -> %고객명% 치환 (Aligo API 호환)
+            let msgContent = data.content.replace(/%이름%/g, '%고객명%');
+
+            const requestBody = {
+                receiver: receiverList.join(','),
+                msg: msgContent,
+                msg_type: data.type,
+                title: data.type === 'LMS' ? data.title : undefined,
+                destination: hasNameVariable ? destination : undefined,
+                rdate,
+                rtime,
+            };
+
+            const res = await fetch("/api/sms/send", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                credentials: "include",
+                body: JSON.stringify(requestBody),
+            });
+
+            const result = await res.json();
+
+            if (result.result_code > 0) {
+                toast({
+                    title: data.isScheduled ? "예약 발송 완료" : "발송 완료",
+                    description: `성공: ${result.success_cnt}건, 실패: ${result.error_cnt}건`,
+                });
+                refreshHistory();
+                fetchRemain();
+            } else {
+                toast({
+                    title: "발송 실패",
+                    description: result.message || "문자 발송 중 오류가 발생했습니다.",
+                    variant: "destructive",
+                });
+            }
+        } catch (error: any) {
+            toast({
+                title: "발송 실패",
+                description: error.message || "문자 발송 중 오류가 발생했습니다.",
+                variant: "destructive",
+            });
+        } finally {
+            setIsSending(false);
         }
     };
 
-    const handleTestSend = (content: string) => {
+    const handleTestSend = async (content: string) => {
         if (!content) return;
-        alert(`[테스트 발송]\n\n내용:\n${content}\n\n(실제 발송되지 않았습니다)`);
+
+        // 테스트 모드로 발송 (실제 발송되지 않음)
+        toast({
+            title: "테스트 발송",
+            description: "테스트 모드에서는 실제 발송되지 않습니다. 실제 발송하려면 '발송하기' 버튼을 사용하세요.",
+        });
     };
 
-    // Access Control (Optional, but safe)
-    if (user?.role !== 'admin' && user?.role !== 'teacher') {
-        // You might want to redirect or show unauthorized
+    // Aligo API 응답을 기존 컴포넌트 형식으로 변환
+    const convertedHistory = aligoHistory.map(item => ({
+        id: item.mid,
+        sentAt: item.reg_date,
+        type: item.type as 'SMS' | 'LMS',
+        title: undefined,
+        content: item.msg,
+        recipientCount: parseInt(item.sms_count) || 0,
+        successCount: parseInt(item.sms_count) - parseInt(item.fail_count) || 0,
+        failCount: parseInt(item.fail_count) || 0,
+        status: item.reserve_state === '예약대기중' ? 'scheduled' as const :
+               item.reserve_state === '전송완료' ? 'completed' as const :
+               item.reserve_state === '취소완료' ? 'cancelled' as const : 'completed' as const,
+        scheduledAt: item.reserve || undefined,
+        recipients: [],
+    }));
+
+    if (user?.role !== 'admin') {
+        return (
+            <DashboardLayout title="문자 발송">
+                <div className="p-6 text-center text-muted-foreground">
+                    관리자만 접근할 수 있습니다.
+                </div>
+            </DashboardLayout>
+        );
     }
 
     return (
         <DashboardLayout title="문자 발송">
             <div className="p-4 md:p-6 space-y-6 max-w-[1600px] mx-auto">
+                {/* 발송 가능 건수 표시 */}
+                {remain && remain.result_code > 0 && (
+                    <Card className="bg-muted/30">
+                        <CardContent className="p-4">
+                            <div className="flex flex-wrap gap-4 items-center">
+                                <span className="text-sm font-medium">발송 가능 건수:</span>
+                                <Badge variant="secondary" className="text-sm">
+                                    SMS: {remain.SMS_CNT?.toLocaleString()}건
+                                </Badge>
+                                <Badge variant="secondary" className="text-sm">
+                                    LMS: {remain.LMS_CNT?.toLocaleString()}건
+                                </Badge>
+                                <Badge variant="secondary" className="text-sm">
+                                    MMS: {remain.MMS_CNT?.toLocaleString()}건
+                                </Badge>
+                            </div>
+                        </CardContent>
+                    </Card>
+                )}
+
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 h-full">
                     {/* Left Col: Recipients */}
                     <div className="lg:col-span-5 space-y-6">
@@ -137,7 +272,10 @@ export default function SmsPage() {
                 {/* Bottom Row: History */}
                 <Card>
                     <CardContent className="p-4">
-                        <SendHistory history={history} onRefresh={refreshHistory} />
+                        <SendHistory
+                            history={convertedHistory}
+                            onRefresh={refreshHistory}
+                        />
                     </CardContent>
                 </Card>
             </div>

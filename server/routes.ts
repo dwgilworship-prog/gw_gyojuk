@@ -2,6 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth, hashPassword } from "./auth";
+import { sendSms, sendSmsMass, getSmsHistory, getSmsDetail, getSmsRemain, cancelSms } from "./sms";
 
 export async function registerRoutes(
   httpServer: Server,
@@ -233,6 +234,17 @@ export async function registerRoutes(
     if (!req.isAuthenticated()) return res.sendStatus(401);
     const logs = await storage.saveAttendance(req.body);
     res.status(201).json(logs);
+  });
+
+  app.delete("/api/attendance", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const { studentId, date } = req.body;
+    if (!studentId || !date) {
+      return res.status(400).json({ message: "studentId와 date가 필요합니다." });
+    }
+    const deleted = await storage.deleteAttendance(studentId, date);
+    if (!deleted) return res.sendStatus(404);
+    res.sendStatus(200);
   });
 
   app.get("/api/reports", async (req, res) => {
@@ -480,6 +492,155 @@ export async function registerRoutes(
       storage.getAllMinistryStudents(),
     ]);
     res.json({ teachers, students });
+  });
+
+  // SMS API Routes
+  // 문자 발송 (동일 내용을 여러명에게)
+  app.post("/api/sms/send", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const user = req.user!;
+    if (user.role !== "admin") return res.sendStatus(403);
+
+    try {
+      const { sender, receiver, msg, msg_type, title, destination, rdate, rtime, testmode_yn } = req.body;
+
+      if (!receiver || !msg) {
+        return res.status(400).json({ message: "수신자와 메시지 내용은 필수입니다." });
+      }
+
+      const result = await sendSms({
+        sender,
+        receiver,
+        msg,
+        msg_type,
+        title,
+        destination,
+        rdate,
+        rtime,
+        testmode_yn,
+      });
+
+      res.json(result);
+    } catch (error: any) {
+      console.error("SMS send error:", error);
+      res.status(500).json({ message: error.message || "문자 발송 중 오류가 발생했습니다." });
+    }
+  });
+
+  // 대량 문자 발송 (각각 다른 내용)
+  app.post("/api/sms/send-mass", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const user = req.user!;
+    if (user.role !== "admin") return res.sendStatus(403);
+
+    try {
+      const { sender, messages, msg_type, title, rdate, rtime, testmode_yn } = req.body;
+
+      if (!messages || !Array.isArray(messages) || messages.length === 0) {
+        return res.status(400).json({ message: "발송할 메시지 목록이 필요합니다." });
+      }
+
+      if (messages.length > 500) {
+        return res.status(400).json({ message: "한 번에 최대 500건까지 발송 가능합니다." });
+      }
+
+      const result = await sendSmsMass({
+        sender,
+        messages,
+        msg_type: msg_type || 'SMS',
+        title,
+        rdate,
+        rtime,
+        testmode_yn,
+      });
+
+      res.json(result);
+    } catch (error: any) {
+      console.error("SMS sendMass error:", error);
+      res.status(500).json({ message: error.message || "대량 문자 발송 중 오류가 발생했습니다." });
+    }
+  });
+
+  // 전송내역 조회
+  app.get("/api/sms/history", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const user = req.user!;
+    if (user.role !== "admin") return res.sendStatus(403);
+
+    try {
+      const { page, page_size, start_date, limit_day } = req.query;
+
+      const result = await getSmsHistory({
+        page: page ? parseInt(page as string) : undefined,
+        page_size: page_size ? parseInt(page_size as string) : undefined,
+        start_date: start_date as string,
+        limit_day: limit_day ? parseInt(limit_day as string) : undefined,
+      });
+
+      res.json(result);
+    } catch (error: any) {
+      console.error("SMS history error:", error);
+      res.status(500).json({ message: error.message || "전송내역 조회 중 오류가 발생했습니다." });
+    }
+  });
+
+  // 전송결과 상세 조회
+  app.get("/api/sms/detail/:mid", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const user = req.user!;
+    if (user.role !== "admin") return res.sendStatus(403);
+
+    try {
+      const { mid } = req.params;
+      const { page, page_size } = req.query;
+
+      const result = await getSmsDetail({
+        mid,
+        page: page ? parseInt(page as string) : undefined,
+        page_size: page_size ? parseInt(page_size as string) : undefined,
+      });
+
+      res.json(result);
+    } catch (error: any) {
+      console.error("SMS detail error:", error);
+      res.status(500).json({ message: error.message || "전송결과 상세 조회 중 오류가 발생했습니다." });
+    }
+  });
+
+  // 발송가능 건수 조회
+  app.get("/api/sms/remain", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const user = req.user!;
+    if (user.role !== "admin") return res.sendStatus(403);
+
+    try {
+      const result = await getSmsRemain();
+      res.json(result);
+    } catch (error: any) {
+      console.error("SMS remain error:", error);
+      res.status(500).json({ message: error.message || "발송가능 건수 조회 중 오류가 발생했습니다." });
+    }
+  });
+
+  // 예약 취소
+  app.post("/api/sms/cancel", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const user = req.user!;
+    if (user.role !== "admin") return res.sendStatus(403);
+
+    try {
+      const { mid } = req.body;
+
+      if (!mid) {
+        return res.status(400).json({ message: "메시지 ID가 필요합니다." });
+      }
+
+      const result = await cancelSms(mid);
+      res.json(result);
+    } catch (error: any) {
+      console.error("SMS cancel error:", error);
+      res.status(500).json({ message: error.message || "예약 취소 중 오류가 발생했습니다." });
+    }
   });
 
   return httpServer;
