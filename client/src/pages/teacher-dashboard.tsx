@@ -247,16 +247,16 @@ const AttendanceDonut = ({ percentage, size = 80, strokeWidth = 8, color = '#7c3
     <div style={{ position: 'relative', width: size, height: size, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
       <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} style={{ transform: 'rotate(-90deg)' }}>
         <circle
-          cx={size/2}
-          cy={size/2}
+          cx={size / 2}
+          cy={size / 2}
           r={radius}
           stroke="#E5E8EB"
           strokeWidth={strokeWidth}
           fill="none"
         />
         <circle
-          cx={size/2}
-          cy={size/2}
+          cx={size / 2}
+          cy={size / 2}
           r={radius}
           stroke={color}
           strokeWidth={strokeWidth}
@@ -419,9 +419,9 @@ const CalendarModal = ({ isOpen, onClose, selectedDate, onSelectDate, students, 
         </div>
 
         <div style={styles.calendarLegend}>
-          <span style={styles.legendItem}><span style={{...styles.legendDot, background: '#00C471'}}/>전원출석</span>
-          <span style={styles.legendItem}><span style={{...styles.legendDot, background: '#FFB800'}}/>결석있음</span>
-          <span style={styles.legendItem}><span style={{...styles.legendDot, background: '#E5E8EB'}}/>기록없음</span>
+          <span style={styles.legendItem}><span style={{ ...styles.legendDot, background: '#00C471' }} />전원출석</span>
+          <span style={styles.legendItem}><span style={{ ...styles.legendDot, background: '#FFB800' }} />결석있음</span>
+          <span style={styles.legendItem}><span style={{ ...styles.legendDot, background: '#E5E8EB' }} />기록없음</span>
         </div>
 
         <button style={styles.calendarCloseBtn} onClick={onClose}>닫기</button>
@@ -527,6 +527,11 @@ export default function TeacherDashboard() {
   const [showConfetti, setShowConfetti] = useState(false);
   const [showCalendar, setShowCalendar] = useState(false);
 
+  // 로컬 출석 상태 (저장 버튼 누를 때까지 서버와 동기화하지 않음)
+  // key: "studentId_date", value: 'present' | 'absent' | null (null은 삭제 의미)
+  const [localAttendance, setLocalAttendance] = useState<Record<string, string | null>>({});
+  const [isSaving, setIsSaving] = useState(false);
+
   // 데이터 로딩 상태 (실제 API 로딩 상태 사용)
   const isDataLoading = isStudentsLoading;
 
@@ -542,6 +547,11 @@ export default function TeacherDashboard() {
       setSelectedGroup(myMokjangs[0].name);
     }
   }, [myMokjangs, selectedGroup]);
+
+  // 선택된 날짜 또는 목장이 변경되면 로컬 출석 상태 초기화
+  useEffect(() => {
+    setLocalAttendance({});
+  }, [selectedDate, selectedGroup]);
 
   useEffect(() => {
     setTimeout(() => setIsLoaded(true), 100);
@@ -572,8 +582,14 @@ export default function TeacherDashboard() {
   const myGroupStudents = students.filter(s => s.group === teacherInfo.group);
   const filteredStudents = students.filter(s => s.group === selectedGroup);
 
-  // 선택된 날짜의 출석 상태 가져오기
+  // 선택된 날짜의 출석 상태 가져오기 (로컬 상태 우선)
   const getAttendanceForDate = (student: UIStudent) => {
+    const localKey = `${student.id}_${selectedDate}`;
+    // 로컬 상태에 해당 학생의 출석 정보가 있으면 그것을 사용
+    if (localKey in localAttendance) {
+      return localAttendance[localKey]; // null이면 '미체크' 상태
+    }
+    // 로컬 상태에 없으면 서버 데이터 사용
     return student.attendanceHistory[selectedDate] || null;
   };
 
@@ -700,40 +716,106 @@ export default function TeacherDashboard() {
     e.stopPropagation();
     triggerHaptic(15);
 
-    // 현재 출석 상태 확인
+    const localKey = `${studentId}_${selectedDate}`;
+
+    // 현재 표시 중인 출석 상태 확인 (로컬 상태 우선)
     const student = students.find(s => s.id === studentId);
-    const currentStatus = student?.attendanceHistory[selectedDate];
+    const currentDisplayStatus = localKey in localAttendance
+      ? localAttendance[localKey]
+      : student?.attendanceHistory[selectedDate] || null;
 
-    console.log('handleAttendance:', { studentId, status, currentStatus, selectedDate });
+    console.log('handleAttendance:', { studentId, status, currentDisplayStatus, selectedDate });
 
-    // 같은 상태를 다시 클릭하면 출석 취소 (삭제)
-    if (currentStatus === status) {
-      console.log('같은 상태 클릭 - 삭제 실행');
-      deleteAttendanceMutation.mutate({
-        studentId,
-        date: selectedDate,
-      });
+    // 같은 상태를 다시 클릭하면 출석 취소 (로컬에서만)
+    if (currentDisplayStatus === status) {
+      console.log('같은 상태 클릭 - 로컬 상태에서 삭제');
+      setLocalAttendance(prev => ({
+        ...prev,
+        [localKey]: null,  // null = 미체크 상태
+      }));
       return;
     }
 
-    // 다른 상태를 클릭하면 해당 상태로 변경
-    const newDbStatus = convertToDbStatus(status);
-    attendanceMutation.mutate({
-      studentId,
-      date: selectedDate,
-      status: newDbStatus,
-    });
+    // 다른 상태를 클릭하면 해당 상태로 로컬 변경
+    console.log('로컬 상태 업데이트:', status);
+    setLocalAttendance(prev => ({
+      ...prev,
+      [localKey]: status,
+    }));
   };
 
-  const handleSave = () => {
+  // 변경사항 있는지 확인
+  const hasChanges = useMemo(() => {
+    return Object.keys(localAttendance).length > 0;
+  }, [localAttendance]);
+
+  const handleSave = async () => {
     triggerHaptic(30);
 
-    if (checkedCount === totalCount) {
-      setShowConfetti(true);
-      showToastMessage('출석 완료! 수고하셨어요!');
-      setTimeout(() => setShowConfetti(false), 3500);
-    } else {
-      showToastMessage('출석이 저장되었어요');
+    // 변경사항이 없으면 바로 완료 처리
+    if (!hasChanges) {
+      if (checkedCount === totalCount) {
+        setShowConfetti(true);
+        showToastMessage('출석 완료! 수고하셨어요!');
+        setTimeout(() => setShowConfetti(false), 3500);
+      } else {
+        showToastMessage('변경사항이 없어요');
+      }
+      return;
+    }
+
+    // 변경사항을 서버에 저장
+    setIsSaving(true);
+    const attendanceToSave: Array<{ studentId: string; date: string; status: 'ATTENDED' | 'ABSENT' }> = [];
+    const attendanceToDelete: Array<{ studentId: string; date: string }> = [];
+
+    for (const [key, status] of Object.entries(localAttendance)) {
+      const [studentId, date] = key.split('_');
+      const student = students.find(s => s.id === studentId);
+      const originalStatus = student?.attendanceHistory[date] || null;
+
+      if (status === null) {
+        // null이면 삭제 (원래 데이터가 있었던 경우에만)
+        if (originalStatus !== null) {
+          attendanceToDelete.push({ studentId, date });
+        }
+      } else {
+        // 출석/결석 저장
+        attendanceToSave.push({
+          studentId,
+          date,
+          status: convertToDbStatus(status),
+        });
+      }
+    }
+
+    try {
+      // 삭제 요청
+      for (const item of attendanceToDelete) {
+        await apiRequest('DELETE', '/api/attendance', item);
+      }
+
+      // 저장 요청 (배치로 한 번에)
+      if (attendanceToSave.length > 0) {
+        await apiRequest('POST', '/api/attendance', attendanceToSave);
+      }
+
+      // 성공 시 로컬 상태 초기화 및 서버 데이터 새로고침
+      setLocalAttendance({});
+      queryClient.invalidateQueries({ queryKey: ["/api/attendance"] });
+
+      if (checkedCount === totalCount) {
+        setShowConfetti(true);
+        showToastMessage('출석 완료! 수고하셨어요!');
+        setTimeout(() => setShowConfetti(false), 3500);
+      } else {
+        showToastMessage('출석이 저장되었어요');
+      }
+    } catch (error) {
+      console.error('출석 저장 에러:', error);
+      showToastMessage('저장에 실패했어요. 다시 시도해주세요.');
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -830,7 +912,7 @@ export default function TeacherDashboard() {
             </div>
           </div>
           <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-            <path d="M7 4l6 6-6 6" stroke="rgba(255,255,255,0.7)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            <path d="M7 4l6 6-6 6" stroke="rgba(255,255,255,0.7)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
         </div>
       </section>
@@ -929,12 +1011,12 @@ export default function TeacherDashboard() {
             <div style={styles.miniStatRow}>
               <span style={styles.miniStatIcon}>🔥</span>
               <span style={styles.miniStatLabel}>4주 연속</span>
-              <span style={{...styles.miniStatValue, color: '#FF6B00'}}>{streakStudents.length}명</span>
+              <span style={{ ...styles.miniStatValue, color: '#FF6B00' }}>{streakStudents.length}명</span>
             </div>
             <div style={styles.miniStatRow}>
               <span style={styles.miniStatIcon}>⚠️</span>
               <span style={styles.miniStatLabel}>장기결석</span>
-              <span style={{...styles.miniStatValue, color: '#F04452'}}>{warningStudents.length}명</span>
+              <span style={{ ...styles.miniStatValue, color: '#F04452' }}>{warningStudents.length}명</span>
             </div>
           </div>
         </div>
@@ -950,7 +1032,7 @@ export default function TeacherDashboard() {
       <header style={styles.attHeader}>
         <button style={styles.backBtn} onClick={() => setCurrentView('home')}>
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-            <path d="M15 19l-7-7 7-7" stroke="#191F28" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            <path d="M15 19l-7-7 7-7" stroke="#191F28" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
         </button>
         <div style={styles.attHeaderCenter}>
@@ -960,8 +1042,8 @@ export default function TeacherDashboard() {
             onClick={() => setShowCalendar(true)}
           >
             {selectedDateDisplay}
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{marginLeft: 4}}>
-              <path d="M4 6l4 4 4-4" stroke="#8B95A1" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{ marginLeft: 4 }}>
+              <path d="M4 6l4 4 4-4" stroke="#8B95A1" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
           </button>
         </div>
@@ -987,7 +1069,7 @@ export default function TeacherDashboard() {
       <div style={styles.progressWrap}>
         <div style={styles.progressInfo}>
           <span style={styles.progressLabel}>
-            <strong style={{color: '#7c3aed'}}>{checkedCount}</strong> / {totalCount}명 완료
+            <strong style={{ color: '#7c3aed' }}>{checkedCount}</strong> / {totalCount}명 완료
           </span>
           <span style={styles.progressSummary}>
             출석 {presentCount} · 결석 {absentCount}
@@ -1059,7 +1141,7 @@ export default function TeacherDashboard() {
                     }}
                     onClick={(e) => handleAttendance(e, student.id, 'present')}
                   >
-                    <span style={{fontSize: 20}}>🙆🏻</span>
+                    <span style={{ fontSize: 20 }}>🙆🏻</span>
                   </button>
                   <button
                     style={{
@@ -1069,7 +1151,7 @@ export default function TeacherDashboard() {
                     }}
                     onClick={(e) => handleAttendance(e, student.id, 'absent')}
                   >
-                    <span style={{fontSize: 20}}>🙅🏻</span>
+                    <span style={{ fontSize: 20 }}>🙅🏻</span>
                   </button>
                 </div>
               </div>
@@ -1083,12 +1165,23 @@ export default function TeacherDashboard() {
         <button
           style={{
             ...styles.saveBtn,
-            background: checkedCount === totalCount ? '#7c3aed' : '#ADB5BD',
+            background: checkedCount === totalCount
+              ? (hasChanges ? '#7c3aed' : '#00C471')
+              : '#ADB5BD',
             transform: checkedCount === totalCount ? 'scale(1)' : 'scale(0.98)',
+            opacity: isSaving ? 0.7 : 1,
+            cursor: (isSaving || checkedCount !== totalCount) ? 'not-allowed' : 'pointer',
           }}
           onClick={handleSave}
+          disabled={isSaving || checkedCount !== totalCount}
         >
-          {checkedCount === totalCount ? '저장하기' : `${totalCount - checkedCount}명 남음`}
+          {isSaving
+            ? '저장 중...'
+            : checkedCount !== totalCount
+              ? `${totalCount - checkedCount}명 남음`
+              : hasChanges
+                ? '저장하기'
+                : '저장 완료 ✓'}
         </button>
       </div>
 
@@ -1122,9 +1215,9 @@ export default function TeacherDashboard() {
         {/* 검색바 */}
         <div style={styles.searchWrap}>
           <div style={styles.searchBox}>
-            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" style={{flexShrink: 0}}>
-              <circle cx="9" cy="9" r="6" stroke="#8B95A1" strokeWidth="2"/>
-              <path d="M13.5 13.5L17 17" stroke="#8B95A1" strokeWidth="2" strokeLinecap="round"/>
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" style={{ flexShrink: 0 }}>
+              <circle cx="9" cy="9" r="6" stroke="#8B95A1" strokeWidth="2" />
+              <path d="M13.5 13.5L17 17" stroke="#8B95A1" strokeWidth="2" strokeLinecap="round" />
             </svg>
             <input
               type="text"
@@ -1167,20 +1260,20 @@ export default function TeacherDashboard() {
         <div style={styles.studentListWrap}>
           {isDataLoading ? (
             <>
-              <div style={{padding: '16px', background: '#FFF', borderRadius: 18, marginBottom: 10}}>
-                <div style={{display: 'flex', gap: 14}}>
+              <div style={{ padding: '16px', background: '#FFF', borderRadius: 18, marginBottom: 10 }}>
+                <div style={{ display: 'flex', gap: 14 }}>
                   <Skeleton width={50} height={50} borderRadius={18} />
-                  <div style={{flex: 1}}>
-                    <Skeleton width="50%" height={16} style={{marginBottom: 8}} />
+                  <div style={{ flex: 1 }}>
+                    <Skeleton width="50%" height={16} style={{ marginBottom: 8 }} />
                     <Skeleton width="30%" height={12} />
                   </div>
                 </div>
               </div>
-              <div style={{padding: '16px', background: '#FFF', borderRadius: 18, marginBottom: 10}}>
-                <div style={{display: 'flex', gap: 14}}>
+              <div style={{ padding: '16px', background: '#FFF', borderRadius: 18, marginBottom: 10 }}>
+                <div style={{ display: 'flex', gap: 14 }}>
                   <Skeleton width={50} height={50} borderRadius={18} />
-                  <div style={{flex: 1}}>
-                    <Skeleton width="60%" height={16} style={{marginBottom: 8}} />
+                  <div style={{ flex: 1 }}>
+                    <Skeleton width="60%" height={16} style={{ marginBottom: 8 }} />
                     <Skeleton width="35%" height={12} />
                   </div>
                 </div>
@@ -1232,14 +1325,14 @@ export default function TeacherDashboard() {
                   </div>
                 </div>
                 <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-                  <path d="M7 4l6 6-6 6" stroke="#D1D6DB" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  <path d="M7 4l6 6-6 6" stroke="#D1D6DB" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
               </div>
             ))
           )}
         </div>
 
-        <div style={{height: 100}} />
+        <div style={{ height: 100 }} />
       </div>
     );
   };
@@ -1484,28 +1577,28 @@ export default function TeacherDashboard() {
         style={currentView === 'home' ? styles.navBtnActive : styles.navBtn}
         onClick={() => { triggerHaptic(); setCurrentView('home'); }}
       >
-        <span style={{fontSize: 22}}>🏠</span>
+        <span style={{ fontSize: 22 }}>🏠</span>
         <span style={styles.navLabel}>홈</span>
       </button>
       <button
         style={currentView === 'attendance' ? styles.navBtnActive : styles.navBtn}
         onClick={() => { triggerHaptic(); setCurrentView('attendance'); }}
       >
-        <span style={{fontSize: 22}}>✅</span>
+        <span style={{ fontSize: 22 }}>✅</span>
         <span style={styles.navLabel}>출석</span>
       </button>
       <button
         style={currentView === 'students' ? styles.navBtnActive : styles.navBtn}
         onClick={() => { triggerHaptic(); setCurrentView('students'); }}
       >
-        <span style={{fontSize: 22}}>👥</span>
+        <span style={{ fontSize: 22 }}>👥</span>
         <span style={styles.navLabel}>학생</span>
       </button>
       <button
         style={currentView === 'settings' ? styles.navBtnActive : styles.navBtn}
         onClick={() => { triggerHaptic(); setCurrentView('settings'); }}
       >
-        <span style={{fontSize: 22}}>⚙️</span>
+        <span style={{ fontSize: 22 }}>⚙️</span>
         <span style={styles.navLabel}>설정</span>
       </button>
     </nav>
