@@ -396,11 +396,12 @@ const CalendarModal = ({ isOpen, onClose, selectedDate, onSelectDate, students, 
                 key={idx}
                 style={{
                   ...styles.calendarCell,
-                  cursor: day ? 'pointer' : 'default',
-                  background: isSelected ? '#7c3aed' : isToday ? '#ede9fe' : 'transparent',
-                  color: isSelected ? '#FFF' : isSunday ? '#F04452' : '#191F28',
+                  cursor: day && isSunday ? 'pointer' : 'default',
+                  background: isSelected ? '#7c3aed' : isToday && isSunday ? '#ede9fe' : 'transparent',
+                  color: isSelected ? '#FFF' : isSunday ? '#F04452' : '#D1D6DB',
+                  opacity: day && !isSunday ? 0.4 : 1,
                 }}
-                onClick={() => day && onSelectDate(dateKey!)}
+                onClick={() => day && isSunday && onSelectDate(dateKey!)}
               >
                 {day && (
                   <>
