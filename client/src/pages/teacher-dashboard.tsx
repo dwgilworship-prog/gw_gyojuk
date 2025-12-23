@@ -1755,7 +1755,7 @@ const styles: Record<string, React.CSSProperties> = {
 
   // ===== 홈 =====
   homeHeader: {
-    padding: '64px 24px 28px',
+    padding: '32px 24px 28px',
   },
   dateChip: {
     display: 'inline-block',
