@@ -45,10 +45,19 @@ const statusConfig: Record<AttendanceStatus, { label: string; icon: typeof Check
   EXCUSED: { label: "사유", icon: AlertCircle, variant: "outline" },
 };
 
+// 이번 주 일요일 계산
+const getThisSunday = () => {
+  const today = new Date();
+  const dayOfWeek = today.getDay(); // 0: 일요일, 1: 월요일, ..., 6: 토요일
+  const sunday = new Date(today);
+  sunday.setDate(today.getDate() - dayOfWeek);
+  return sunday;
+};
+
 export default function Attendance() {
   const { user } = useAuth();
   const { toast } = useToast();
-  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+  const [selectedDate, setSelectedDate] = useState<Date>(getThisSunday());
   const [selectedMokjangId, setSelectedMokjangId] = useState<string>("");
   const [attendanceState, setAttendanceState] = useState<AttendanceState>({});
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
@@ -212,6 +221,12 @@ export default function Attendance() {
                         setSelectedDate(date);
                         setIsCalendarOpen(false);
                       }
+                    }}
+                    disabled={(date) => {
+                      const today = new Date();
+                      today.setHours(23, 59, 59, 999);
+                      // 일요일이 아니거나 미래 날짜면 비활성화
+                      return date.getDay() !== 0 || date > today;
                     }}
                     initialFocus
                   />

@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { useAuth } from '@/hooks/use-auth';
 import { queryClient, apiRequest } from '@/lib/queryClient';
-import type { Teacher, Mokjang, Student as DbStudent, AttendanceLog } from '@shared/schema';
+import type { Teacher, Mokjang, Student as DbStudent, AttendanceLog, Ministry, MinistryStudent } from '@shared/schema';
 
 // ==================== 타입 정의 ====================
 // UI용 학생 타입
@@ -18,6 +18,7 @@ interface UIStudent {
   birthday: string;
   memo: string;
   joinDate: string;
+  school: string;
   isWarning: boolean;
   attendanceHistory: Record<string, string>;
 }
@@ -115,6 +116,7 @@ function convertToUIStudent(
     birthday,
     memo: dbStudent.memo || '',
     joinDate,
+    school: dbStudent.school || '',
     isWarning,
     attendanceHistory,
   };
@@ -390,18 +392,20 @@ const CalendarModal = ({ isOpen, onClose, selectedDate, onSelectDate, students, 
             const isSelected = dateKey === selectedDate;
             const isToday = dateKey === todayKey;
             const isSunday = idx % 7 === 0;
+            const isFuture = dateKey ? dateKey > todayKey : false;
+            const isSelectable = isSunday && !isFuture;
 
             return (
               <div
                 key={idx}
                 style={{
                   ...styles.calendarCell,
-                  cursor: day && isSunday ? 'pointer' : 'default',
+                  cursor: day && isSelectable ? 'pointer' : 'default',
                   background: isSelected ? '#7c3aed' : isToday && isSunday ? '#ede9fe' : 'transparent',
-                  color: isSelected ? '#FFF' : isSunday ? '#F04452' : '#D1D6DB',
-                  opacity: day && !isSunday ? 0.4 : 1,
+                  color: isSelected ? '#FFF' : isFuture ? '#D1D6DB' : isSunday ? '#F04452' : '#D1D6DB',
+                  opacity: day && (!isSunday || isFuture) ? 0.4 : 1,
                 }}
-                onClick={() => day && isSunday && onSelectDate(dateKey!)}
+                onClick={() => day && isSelectable && onSelectDate(dateKey!)}
               >
                 {day && (
                   <>
@@ -500,6 +504,24 @@ export default function TeacherDashboard() {
     enabled: !!myMokjangs && myMokjangs.length > 0,
   });
 
+  // 사역부서 정보 가져오기
+  const { data: ministries } = useQuery<Ministry[]>({
+    queryKey: ["/api/ministries"],
+  });
+
+  const { data: ministryMembers } = useQuery<{ students: MinistryStudent[] }>({
+    queryKey: ["/api/ministry-members"],
+  });
+
+  // 학생의 사역부서 목록 가져오기
+  const getStudentMinistries = useCallback((studentId: string) => {
+    if (!ministryMembers || !ministries) return [];
+    const assignedIds = ministryMembers.students
+      .filter(ms => ms.studentId === studentId)
+      .map(ms => ms.ministryId);
+    return ministries.filter(m => assignedIds.includes(m.id)).map(m => m.name);
+  }, [ministryMembers, ministries]);
+
   // DB 학생을 UI용으로 변환 (출석 기록 포함)
   const students: UIStudent[] = useMemo(() => {
     if (!dbStudents || !myMokjangs) return [];
@@ -536,10 +558,14 @@ export default function TeacherDashboard() {
   // 데이터 로딩 상태 (실제 API 로딩 상태 사용)
   const isDataLoading = isStudentsLoading;
 
-  // 선택된 날짜 (기본: 오늘)
+  // 선택된 날짜 (기본: 이번 주 주일)
   const today = new Date();
+  const dayOfWeek = today.getDay(); // 0: 일요일, 1: 월요일, ..., 6: 토요일
+  const thisSunday = new Date(today);
+  thisSunday.setDate(today.getDate() - dayOfWeek); // 이번 주 일요일로 설정
+
   const [selectedDate, setSelectedDate] = useState(
-    `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`
+    `${thisSunday.getFullYear()}-${String(thisSunday.getMonth() + 1).padStart(2, '0')}-${String(thisSunday.getDate()).padStart(2, '0')}`
   );
 
   // 목장 정보 로드되면 기본 선택
@@ -1139,20 +1165,22 @@ export default function TeacherDashboard() {
                       ...styles.attBtn,
                       background: attendance === 'present' ? '#ede9fe' : '#F5F6F8',
                       transform: attendance === 'present' ? 'scale(1.05)' : 'scale(1)',
+                      color: attendance === 'present' ? '#7c3aed' : '#8B95A1',
                     }}
                     onClick={(e) => handleAttendance(e, student.id, 'present')}
                   >
-                    <span style={{ fontSize: 20 }}>🙆🏻</span>
+                    <span style={{ fontSize: 14, fontWeight: 600 }}>출석</span>
                   </button>
                   <button
                     style={{
                       ...styles.attBtn,
                       background: attendance === 'absent' ? '#FFEFEF' : '#F5F6F8',
                       transform: attendance === 'absent' ? 'scale(1.05)' : 'scale(1)',
+                      color: attendance === 'absent' ? '#F04452' : '#8B95A1',
                     }}
                     onClick={(e) => handleAttendance(e, student.id, 'absent')}
                   >
-                    <span style={{ fontSize: 20 }}>🙅🏻</span>
+                    <span style={{ fontSize: 14, fontWeight: 600 }}>결석</span>
                   </button>
                 </div>
               </div>
@@ -1525,11 +1553,39 @@ export default function TeacherDashboard() {
               <span style={styles.infoLabel}>생년월일</span>
               <span style={styles.infoValue}>{parseInt(month)}월 {parseInt(day)}일</span>
             </div>
+            {selectedStudent.school && (
+              <>
+                <div style={styles.infoDivider} />
+                <div style={styles.infoRow}>
+                  <span style={styles.infoLabel}>학교</span>
+                  <span style={styles.infoValue}>{selectedStudent.school}</span>
+                </div>
+              </>
+            )}
             <div style={styles.infoDivider} />
             <div style={styles.infoRow}>
               <span style={styles.infoLabel}>등록일</span>
               <span style={styles.infoValue}>{selectedStudent.joinDate}</span>
             </div>
+            {getStudentMinistries(selectedStudent.id).length > 0 && (
+              <>
+                <div style={styles.infoDivider} />
+                <div style={styles.infoRow}>
+                  <span style={styles.infoLabel}>사역부서</span>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
+                    {getStudentMinistries(selectedStudent.id).map((name, i) => (
+                      <span key={i} style={{
+                        fontSize: '12px',
+                        padding: '2px 8px',
+                        borderRadius: '12px',
+                        background: '#ede9fe',
+                        color: '#7c3aed',
+                      }}>{name}</span>
+                    ))}
+                  </div>
+                </div>
+              </>
+            )}
           </div>
 
           {/* 액션 버튼 */}
