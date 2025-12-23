@@ -2007,7 +2007,7 @@ const styles: Record<string, React.CSSProperties> = {
 
   // ===== 출석 =====
   attHeader: {
-    padding: '56px 16px 12px',
+    padding: '24px 16px 12px',
     display: 'flex',
     alignItems: 'center',
     background: '#FFFFFF',
@@ -2339,7 +2339,7 @@ const styles: Record<string, React.CSSProperties> = {
 
   // ===== 학생 목록 =====
   studentListHeader: {
-    padding: '64px 24px 20px',
+    padding: '32px 24px 20px',
   },
   studentListTitle: {
     fontSize: 28,
@@ -2771,7 +2771,7 @@ const styles: Record<string, React.CSSProperties> = {
 
   // ===== 설정 화면 =====
   settingsHeader: {
-    padding: '64px 24px 20px',
+    padding: '32px 24px 20px',
   },
   settingsTitle: {
     fontSize: 28,
