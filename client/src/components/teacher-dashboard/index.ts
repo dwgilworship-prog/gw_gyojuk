@@ -9,6 +9,7 @@ export { Confetti } from './Confetti';
 export { AttendanceDonut } from './AttendanceDonut';
 export { Skeleton, SkeletonCard } from './Skeleton';
 export { CalendarModal } from './CalendarModal';
+export { ObservationModal } from './ObservationModal';
 
 // Views
 export { HomeView } from './HomeView';

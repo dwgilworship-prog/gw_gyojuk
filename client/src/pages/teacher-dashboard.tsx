@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { useAuth } from '@/hooks/use-auth';
 import { queryClient, apiRequest } from '@/lib/queryClient';
-import type { Teacher, Mokjang, Student as DbStudent, AttendanceLog, Ministry, MinistryStudent } from '@shared/schema';
+import type { Teacher, Mokjang, Student as DbStudent, AttendanceLog, Ministry, MinistryStudent, StudentObservation } from '@shared/schema';
 
 // 분리된 컴포넌트들 import
 import {
@@ -18,6 +18,7 @@ import {
   BottomSheet,
   Navigation,
   Toast,
+  ObservationModal,
 } from '@/components/teacher-dashboard';
 
 export default function TeacherDashboard() {
@@ -95,6 +96,50 @@ export default function TeacherDashboard() {
     queryKey: ["/api/ministry-members"],
   });
 
+  // 선택된 날짜 (기본: 이번 주 주일) - 위로 이동
+  const today = new Date();
+  const dayOfWeek = today.getDay();
+  const thisSunday = new Date(today);
+  thisSunday.setDate(today.getDate() - dayOfWeek);
+
+  const [selectedDate, setSelectedDate] = useState(
+    `${thisSunday.getFullYear()}-${String(thisSunday.getMonth() + 1).padStart(2, '0')}-${String(thisSunday.getDate()).padStart(2, '0')}`
+  );
+
+  // 선택된 학생 상태 (바텀시트용)
+  const [selectedStudent, setSelectedStudent] = useState<UIStudent | null>(null);
+
+  // 특이사항 모달용 상태
+  const [observationStudent, setObservationStudent] = useState<UIStudent | null>(null);
+  const [showObservationModal, setShowObservationModal] = useState(false);
+
+  // 선택된 학생의 해당 날짜 특이사항 조회
+  const { data: studentObservations, isLoading: isObservationsLoading } = useQuery<StudentObservation[]>({
+    queryKey: ["/api/observations", { studentId: observationStudent?.id, date: selectedDate }],
+    queryFn: async () => {
+      if (!observationStudent) return [];
+      const res = await fetch(`/api/observations?studentId=${observationStudent.id}&date=${selectedDate}`);
+      if (!res.ok) return [];
+      return res.json();
+    },
+    enabled: !!observationStudent && showObservationModal,
+  });
+
+  // 해당 날짜 모든 특이사항 조회 (아이콘 표시용)
+  const { data: allObservationsForDate } = useQuery<StudentObservation[]>({
+    queryKey: ["/api/observations", { date: selectedDate }],
+    queryFn: async () => {
+      const res = await fetch(`/api/observations?date=${selectedDate}`);
+      if (!res.ok) return [];
+      return res.json();
+    },
+  });
+
+  // 특정 학생이 해당 날짜에 특이사항이 있는지 확인
+  const hasObservation = useCallback((studentId: string) => {
+    return allObservationsForDate?.some((obs) => obs.studentId === studentId) || false;
+  }, [allObservationsForDate]);
+
   // 학생의 사역부서 목록 가져오기
   const getStudentMinistries = useCallback((studentId: string) => {
     if (!ministryMembers || !ministries) return [];
@@ -122,7 +167,6 @@ export default function TeacherDashboard() {
 
   const [currentView, setCurrentView] = useState('home');
   const [selectedGroup, setSelectedGroup] = useState('');
-  const [selectedStudent, setSelectedStudent] = useState<UIStudent | null>(null);
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
   const [isLoaded, setIsLoaded] = useState(false);
@@ -137,16 +181,6 @@ export default function TeacherDashboard() {
   const [isSaving, setIsSaving] = useState(false);
 
   const isDataLoading = isStudentsLoading;
-
-  // 선택된 날짜 (기본: 이번 주 주일)
-  const today = new Date();
-  const dayOfWeek = today.getDay();
-  const thisSunday = new Date(today);
-  thisSunday.setDate(today.getDate() - dayOfWeek);
-
-  const [selectedDate, setSelectedDate] = useState(
-    `${thisSunday.getFullYear()}-${String(thisSunday.getMonth() + 1).padStart(2, '0')}-${String(thisSunday.getDate()).padStart(2, '0')}`
-  );
 
   // 목장 정보 로드되면 기본 선택
   useEffect(() => {
@@ -284,6 +318,71 @@ export default function TeacherDashboard() {
       showToastMessage('메모 저장에 실패했어요');
     },
   });
+
+  // 특이사항 생성 mutation
+  const createObservationMutation = useMutation({
+    mutationFn: async (content: string) => {
+      if (!observationStudent) throw new Error('학생이 선택되지 않았습니다.');
+      return await apiRequest('POST', '/api/observations', {
+        studentId: observationStudent.id,
+        observationDate: selectedDate,
+        content,
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ["/api/observations", { studentId: observationStudent?.id, date: selectedDate }]
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["/api/observations", { date: selectedDate }]
+      });
+      showToastMessage('특이사항이 저장되었어요');
+    },
+    onError: () => {
+      showToastMessage('특이사항 저장에 실패했어요');
+    },
+  });
+
+  // 특이사항 삭제 mutation
+  const deleteObservationMutation = useMutation({
+    mutationFn: async (id: string) => {
+      return await apiRequest('DELETE', `/api/observations/${id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ["/api/observations", { studentId: observationStudent?.id, date: selectedDate }]
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["/api/observations", { date: selectedDate }]
+      });
+      showToastMessage('특이사항이 삭제되었어요');
+    },
+    onError: () => {
+      showToastMessage('특이사항 삭제에 실패했어요');
+    },
+  });
+
+  // 특이사항 추가 핸들러
+  const handleAddObservation = useCallback((content: string) => {
+    createObservationMutation.mutate(content);
+  }, [createObservationMutation]);
+
+  // 특이사항 삭제 핸들러
+  const handleDeleteObservation = useCallback((id: string) => {
+    deleteObservationMutation.mutate(id);
+  }, [deleteObservationMutation]);
+
+  // 특이사항 모달 열기
+  const handleOpenObservation = useCallback((student: UIStudent) => {
+    setObservationStudent(student);
+    setShowObservationModal(true);
+  }, []);
+
+  // 특이사항 모달 닫기
+  const handleCloseObservation = useCallback(() => {
+    setShowObservationModal(false);
+    setObservationStudent(null);
+  }, []);
 
   const handleAttendance = useCallback((e: React.MouseEvent, studentId: string, status: string) => {
     e.stopPropagation();
@@ -476,6 +575,8 @@ export default function TeacherDashboard() {
             handleAttendance={handleAttendance}
             handleSave={handleSave}
             handleCopyReport={handleCopyReport}
+            onOpenObservation={handleOpenObservation}
+            hasObservation={hasObservation}
           />
         )}
         {currentView === 'students' && (
@@ -521,6 +622,16 @@ export default function TeacherDashboard() {
           getStudentMinistries={getStudentMinistries}
         />
         <Toast showToast={showToast} toastMessage={toastMessage} />
+        <ObservationModal
+          isOpen={showObservationModal}
+          onClose={handleCloseObservation}
+          student={observationStudent}
+          selectedDate={selectedDate}
+          observations={studentObservations || []}
+          onAddObservation={handleAddObservation}
+          onDeleteObservation={handleDeleteObservation}
+          isLoading={isObservationsLoading}
+        />
       </div>
     </div>
   );
