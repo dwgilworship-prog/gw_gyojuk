@@ -163,6 +163,7 @@ export default function Teachers() {
       queryClient.invalidateQueries({ queryKey: ["/api/teachers"] });
       queryClient.invalidateQueries({ queryKey: ["/api/stats"] });
       queryClient.invalidateQueries({ queryKey: ["/api/dashboard-widgets"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/ministry-members"] });
       toast({ title: "교사가 등록되었습니다." });
       handleCloseForm();
     },
@@ -218,6 +219,8 @@ export default function Teachers() {
       queryClient.invalidateQueries({ queryKey: ["/api/teachers"] });
       queryClient.invalidateQueries({ queryKey: ["/api/stats"] });
       queryClient.invalidateQueries({ queryKey: ["/api/dashboard-widgets"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/mokjang-teachers"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/ministry-members"] });
       toast({ title: "교사가 삭제되었습니다." });
       setDeletingTeacher(null);
     },

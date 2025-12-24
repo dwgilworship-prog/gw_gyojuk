@@ -205,6 +205,7 @@ export default function Students() {
       queryClient.invalidateQueries({ queryKey: ["/api/students"] });
       queryClient.invalidateQueries({ queryKey: ["/api/stats"] });
       queryClient.invalidateQueries({ queryKey: ["/api/dashboard-widgets"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/ministry-members"] });
       toast({ title: "학생이 등록되었습니다." });
       handleCloseForm();
     },
@@ -265,6 +266,7 @@ export default function Students() {
       queryClient.invalidateQueries({ queryKey: ["/api/students"] });
       queryClient.invalidateQueries({ queryKey: ["/api/stats"] });
       queryClient.invalidateQueries({ queryKey: ["/api/dashboard-widgets"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/ministry-members"] });
       toast({ title: "학생이 삭제되었습니다." });
       setDeletingStudent(null);
     },
@@ -298,6 +300,7 @@ export default function Students() {
       queryClient.invalidateQueries({ queryKey: ["/api/students"] });
       queryClient.invalidateQueries({ queryKey: ["/api/stats"] });
       queryClient.invalidateQueries({ queryKey: ["/api/dashboard-widgets"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/ministry-members"] });
       toast({ title: "선택된 학생들이 삭제되었습니다." });
       setSelectedIds(new Set());
       setBulkDeleteOpen(false);
