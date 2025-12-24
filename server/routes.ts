@@ -247,6 +247,65 @@ export async function registerRoutes(
     res.sendStatus(200);
   });
 
+  // 출석 현황 대시보드 API
+  app.get("/api/attendance-dashboard", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const { date } = req.query;
+
+    if (!date || typeof date !== "string") {
+      return res.status(400).json({ message: "date 파라미터가 필요합니다." });
+    }
+
+    try {
+      // 1. 해당 날짜 출석 로그
+      const attendanceLogs = await storage.getAttendanceByDate(date);
+
+      // 2. 해당 날짜 특이사항
+      const observations = await storage.getObservationsByDate(date);
+
+      // 3. 전체 활성 학생 목록
+      const allStudents = await storage.getStudents();
+      const activeStudents = allStudents.filter(s => s.status === 'ACTIVE');
+
+      // 4. 목장 정보
+      const mokjangs = await storage.getMokjangs();
+
+      // 5. 통계 계산
+      const stats = {
+        total: activeStudents.length,
+        attended: attendanceLogs.filter(l => l.status === 'ATTENDED').length,
+        late: attendanceLogs.filter(l => l.status === 'LATE').length,
+        absent: attendanceLogs.filter(l => l.status === 'ABSENT').length,
+        excused: attendanceLogs.filter(l => l.status === 'EXCUSED').length,
+        notChecked: activeStudents.length - attendanceLogs.length,
+      };
+
+      // 6. 학생별 상세 현황 (출석 + 특이사항 조인)
+      const studentDetails = activeStudents.map(student => {
+        const attendance = attendanceLogs.find(l => l.studentId === student.id);
+        const studentObservations = observations.filter(o => o.studentId === student.id);
+        const mokjang = mokjangs.find(m => m.id === student.mokjangId);
+
+        return {
+          id: student.id,
+          name: student.name,
+          grade: student.grade,
+          mokjangId: student.mokjangId,
+          mokjangName: mokjang?.name || '미배정',
+          status: attendance?.status || null,
+          memo: attendance?.memo || null,
+          observations: studentObservations.map(o => o.content),
+          hasObservation: studentObservations.length > 0,
+        };
+      });
+
+      res.json({ stats, students: studentDetails });
+    } catch (error) {
+      console.error("출석 대시보드 조회 오류:", error);
+      res.status(500).json({ message: "조회 중 오류가 발생했습니다." });
+    }
+  });
+
   app.get("/api/reports", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     const { mokjangId, date } = req.query;

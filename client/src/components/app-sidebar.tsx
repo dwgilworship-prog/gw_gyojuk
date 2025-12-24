@@ -16,10 +16,7 @@ import { Button } from "@/components/ui/button";
 import {
   LayoutDashboard,
   Users,
-  Settings,
-  PieChart,
   ClipboardCheck,
-  Building,
   Mail,
   BookOpen,
   UserCheck,
@@ -34,6 +31,7 @@ const adminMenuItems = [
   { title: "교사 관리", url: "/teachers", icon: UserCog },
   { title: "목장 관리", url: "/mokjangs", icon: BookOpen },
   { title: "출석 체크", url: "/attendance", icon: UserCheck },
+  { title: "출석 현황", url: "/attendance-dashboard", icon: ClipboardCheck },
   { title: "사역부서", url: "/ministries", icon: Users },
   { title: "통계/리포트", url: "/stats", icon: BarChart3 },
   { title: "문자 발송", url: "/sms", icon: Mail },

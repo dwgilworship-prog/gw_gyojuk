@@ -10,6 +10,7 @@ import Students from "@/pages/students";
 import Teachers from "@/pages/teachers";
 import Mokjangs from "@/pages/mokjangs";
 import Attendance from "@/pages/attendance";
+import AttendanceDashboard from "@/pages/attendance-dashboard";
 import LongAbsence from "@/pages/long-absence";
 import Stats from "@/pages/stats";
 import Ministries from "@/pages/ministries";
@@ -29,6 +30,7 @@ function Router() {
       {/* 관리자만 접근 가능 */}
       <ProtectedRoute path="/teachers" component={Teachers} requiredRole="admin" />
       <ProtectedRoute path="/mokjangs" component={Mokjangs} requiredRole="admin" />
+      <ProtectedRoute path="/attendance-dashboard" component={AttendanceDashboard} requiredRole="admin" />
       <ProtectedRoute path="/long-absence" component={LongAbsence} requiredRole="admin" />
       <ProtectedRoute path="/stats" component={Stats} requiredRole="admin" />
       <ProtectedRoute path="/ministries" component={Ministries} requiredRole="admin" />
