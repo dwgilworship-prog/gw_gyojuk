@@ -29,10 +29,40 @@ export function ProtectedRoute({
   if (isLoading) {
     return (
       <Route path={path}>
-        <div className="flex items-center justify-center min-h-screen bg-background">
-          <div className="flex flex-col items-center gap-4">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            <span className="text-muted-foreground text-sm">로딩중...</span>
+        <div
+          className="fixed inset-0 z-[99999] flex flex-col items-center justify-center"
+          style={{
+            background: 'linear-gradient(135deg, #7c3aed 0%, #5b21b6 50%, #4c1d95 100%)'
+          }}
+        >
+          {/* 로고 컨테이너 */}
+          <div
+            className="w-[100px] h-[100px] rounded-[28px] flex items-center justify-center animate-pulse"
+            style={{
+              background: 'rgba(255,255,255,0.15)',
+              boxShadow: '0 20px 40px rgba(0,0,0,0.2)'
+            }}
+          >
+            <img
+              src="/favicon_gw_final.png"
+              alt="GIL Worship"
+              className="w-[70px] h-[70px] rounded-[16px]"
+            />
+          </div>
+
+          {/* 앱 이름 */}
+          <h1 className="mt-6 text-2xl font-bold text-white tracking-tight">
+            GIL Worship
+          </h1>
+          <p className="mt-2 text-sm text-white/70">
+            청소년부 사역 관리
+          </p>
+
+          {/* 로딩 도트 */}
+          <div className="mt-10 flex gap-2">
+            <span className="w-2 h-2 bg-white/80 rounded-full animate-bounce" style={{ animationDelay: '0s' }} />
+            <span className="w-2 h-2 bg-white/80 rounded-full animate-bounce" style={{ animationDelay: '0.15s' }} />
+            <span className="w-2 h-2 bg-white/80 rounded-full animate-bounce" style={{ animationDelay: '0.3s' }} />
           </div>
         </div>
       </Route>
