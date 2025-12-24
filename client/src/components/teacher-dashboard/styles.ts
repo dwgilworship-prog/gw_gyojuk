@@ -21,10 +21,11 @@ export const styles: Record<string, React.CSSProperties> = {
     boxShadow: '0 24px 80px rgba(0,0,0,0.12), 0 0 0 0.5px rgba(0,0,0,0.08)',
   },
   container: {
-    height: '100%',
+    flex: 1,
     overflowY: 'auto',
     overflowX: 'hidden',
     paddingBottom: 100,
+    WebkitOverflowScrolling: 'touch',
   },
 
   // ===== 홈 =====
@@ -1181,12 +1182,17 @@ export const styles: Record<string, React.CSSProperties> = {
 
 // CSS 애니메이션 스타일
 export const globalStyles = `
-  body {
+  html, body {
+    margin: 0;
+    padding: 0;
     overscroll-behavior: none;
+    overscroll-behavior-y: none;
+    -webkit-overflow-scrolling: touch;
   }
 
   .nav-bar {
     touch-action: none;
+    -webkit-touch-callout: none;
   }
 
   @keyframes shimmer {
@@ -1199,17 +1205,39 @@ export const globalStyles = `
     .teacher-dashboard-wrapper {
       padding: 0 !important;
       background: #FFFFFF !important;
+      min-height: 100vh !important;
+      min-height: 100dvh !important;
+      min-height: 100svh !important;
     }
     .teacher-dashboard-device {
       max-width: 100% !important;
-      height: 100vh !important;
-      height: 100dvh !important;
+      min-height: 100vh !important;
+      min-height: 100dvh !important;
+      min-height: 100svh !important;
+      height: auto !important;
       border-radius: 0 !important;
       box-shadow: none !important;
-      padding-top: max(env(safe-area-inset-top), 12px) !important;
-      padding-bottom: env(safe-area-inset-bottom) !important;
-      padding-left: env(safe-area-inset-left) !important;
-      padding-right: env(safe-area-inset-right) !important;
+      padding-top: env(safe-area-inset-top, 0px) !important;
+      padding-left: env(safe-area-inset-left, 0px) !important;
+      padding-right: env(safe-area-inset-right, 0px) !important;
+      padding-bottom: 0 !important;
+      display: flex !important;
+      flex-direction: column !important;
+    }
+
+    /* 하단 네비게이션 바 - fixed로 변경하여 브라우저 UI 위에 표시 */
+    .nav-bar {
+      position: fixed !important;
+      bottom: 0 !important;
+      left: 0 !important;
+      right: 0 !important;
+      padding-bottom: env(safe-area-inset-bottom, 0px) !important;
+      z-index: 9999 !important;
+    }
+
+    /* 컨텐츠 영역이 nav 뒤에 가려지지 않도록 여유 공간 확보 */
+    .teacher-dashboard-device > div:first-child {
+      padding-bottom: calc(90px + env(safe-area-inset-bottom, 0px)) !important;
     }
   }
 
@@ -1221,6 +1249,7 @@ export const globalStyles = `
     .teacher-dashboard-device {
       max-width: 100% !important;
       height: calc(100vh - 32px) !important;
+      height: calc(100dvh - 32px) !important;
       border-radius: 32px !important;
     }
   }
