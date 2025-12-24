@@ -69,7 +69,7 @@ export const AttendanceView = ({
   onOpenObservation,
   hasObservation,
 }: AttendanceViewProps) => (
-  <div style={styles.container}>
+  <div style={styles.container} className="hide-scrollbar">
     <Confetti active={showConfetti} />
 
     <header style={styles.attHeader}>

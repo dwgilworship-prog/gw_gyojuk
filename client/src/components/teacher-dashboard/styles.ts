@@ -19,6 +19,8 @@ export const styles: Record<string, React.CSSProperties> = {
     overflow: 'hidden',
     position: 'relative',
     boxShadow: '0 24px 80px rgba(0,0,0,0.12), 0 0 0 0.5px rgba(0,0,0,0.08)',
+    display: 'flex',
+    flexDirection: 'column',
   },
   container: {
     flex: 1,
@@ -1292,6 +1294,15 @@ export const globalStyles = `
   @keyframes shimmer {
     0% { background-position: 200% 0; }
     100% { background-position: -200% 0; }
+  }
+
+  /* 스크롤바 숨김 - 기능은 유지하되 시각적으로 숨김 */
+  .hide-scrollbar {
+    -ms-overflow-style: none;  /* IE, Edge */
+    scrollbar-width: none;  /* Firefox */
+  }
+  .hide-scrollbar::-webkit-scrollbar {
+    display: none;  /* Chrome, Safari, Opera */
   }
 
   /* 모바일에서 전체 화면 사용 */
