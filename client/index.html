@@ -20,7 +20,84 @@
 </head>
 
 <body>
-  <div id="root"></div>
+  <div id="root">
+    <!-- 스플래시 스크린 (React 로딩 전 표시) -->
+    <div id="splash-screen" style="
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: linear-gradient(135deg, #7c3aed 0%, #5b21b6 50%, #4c1d95 100%);
+      z-index: 99999;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      transition: opacity 0.4s ease-out, transform 0.4s ease-out;
+    ">
+      <!-- 로고 컨테이너 -->
+      <div style="
+        width: 100px; height: 100px;
+        background: rgba(255,255,255,0.15);
+        border-radius: 28px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+        animation: pulse 2s ease-in-out infinite;
+      ">
+        <img src="/favicon_gw_final.png" alt="GIL Worship" style="
+          width: 70px; height: 70px;
+          border-radius: 16px;
+        " />
+      </div>
+
+      <!-- 앱 이름 -->
+      <h1 style="
+        margin-top: 24px;
+        font-family: -apple-system, BlinkMacSystemFont, 'Pretendard', sans-serif;
+        font-size: 24px;
+        font-weight: 700;
+        color: #ffffff;
+        letter-spacing: -0.5px;
+      ">GIL Worship</h1>
+
+      <p style="
+        margin-top: 8px;
+        font-family: -apple-system, BlinkMacSystemFont, 'Pretendard', sans-serif;
+        font-size: 14px;
+        color: rgba(255,255,255,0.7);
+      ">청소년부 사역 관리</p>
+
+      <!-- 로딩 도트 -->
+      <div style="
+        margin-top: 40px;
+        display: flex;
+        gap: 8px;
+      ">
+        <div class="dot" style="--delay: 0s;"></div>
+        <div class="dot" style="--delay: 0.15s;"></div>
+        <div class="dot" style="--delay: 0.3s;"></div>
+      </div>
+    </div>
+
+    <style>
+      @keyframes pulse {
+        0%, 100% { transform: scale(1); }
+        50% { transform: scale(1.05); }
+      }
+      @keyframes bounce {
+        0%, 100% { transform: translateY(0); opacity: 0.4; }
+        50% { transform: translateY(-8px); opacity: 1; }
+      }
+      .dot {
+        width: 8px;
+        height: 8px;
+        background: rgba(255,255,255,0.8);
+        border-radius: 50%;
+        animation: bounce 1s ease-in-out infinite;
+        animation-delay: var(--delay);
+      }
+    </style>
+  </div>
   <script type="module" src="/src/main.tsx"></script>
 </body>
 
