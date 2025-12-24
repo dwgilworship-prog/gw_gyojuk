@@ -201,7 +201,7 @@ export const AttendanceView = ({
     </div>
 
     {/* 저장 버튼 */}
-    <div style={styles.bottomFixed}>
+    <div style={styles.bottomFixed} className="save-btn-fixed">
       <button
         style={{
           ...styles.saveBtn,

@@ -1239,6 +1239,15 @@ export const globalStyles = `
     .teacher-dashboard-device > div:first-child {
       padding-bottom: calc(90px + env(safe-area-inset-bottom, 0px)) !important;
     }
+
+    /* 저장 버튼 플로팅 - nav 바로 위에 고정 */
+    .save-btn-fixed {
+      position: fixed !important;
+      bottom: calc(80px + env(safe-area-inset-bottom, 0px) + 12px) !important;
+      left: 20px !important;
+      right: 20px !important;
+      z-index: 9998 !important;
+    }
   }
 
   /* 태블릿 */
