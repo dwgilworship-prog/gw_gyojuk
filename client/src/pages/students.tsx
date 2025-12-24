@@ -66,6 +66,12 @@ import { queryClient, apiRequest } from "@/lib/queryClient";
 import type { Student, Mokjang, Teacher, MokjangTeacher, Ministry, MinistryStudent } from "@shared/schema";
 import { useAuth } from "@/hooks/use-auth";
 
+interface LongAbsenceStudent {
+  student: Student;
+  weeksAbsent: number;
+  lastAttendanceDate: string | null;
+}
+
 const studentFormSchema = z.object({
   name: z.string().min(1, "이름을 입력해주세요"),
   birth: z.string().optional(),
@@ -118,6 +124,7 @@ export default function Students() {
   const [mokjangFilter, setMokjangFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [ministryFilter, setMinistryFilter] = useState<string>("all");
+  const [absenceFilter, setAbsenceFilter] = useState<string>("all");
 
   const [sortField, setSortField] = useState<SortField>("name");
   const [sortOrder, setSortOrder] = useState<SortOrder>("asc");
@@ -158,6 +165,12 @@ export default function Students() {
 
   const { data: ministryMembers } = useQuery<{ students: MinistryStudent[] }>({
     queryKey: ["/api/ministry-members"],
+  });
+
+  // 장기결석자 조회 (admin만)
+  const { data: longAbsenceStudents } = useQuery<LongAbsenceStudent[]>({
+    queryKey: ["/api/long-absence-students"],
+    enabled: user?.role === "admin",
   });
 
   const form = useForm<StudentFormData>({
@@ -405,6 +418,15 @@ export default function Students() {
     return sortOrder === "asc" ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />;
   };
 
+  // 장기결석자 학생 ID Set 만들기
+  const longAbsenceMap = useMemo(() => {
+    const map = new Map<string, number>();
+    longAbsenceStudents?.forEach(item => {
+      map.set(item.student.id, item.weeksAbsent);
+    });
+    return map;
+  }, [longAbsenceStudents]);
+
   const filteredAndSortedStudents = useMemo(() => {
     if (!students) return [];
 
@@ -431,7 +453,18 @@ export default function Students() {
         .map(ms => ms.ministryId) || [];
       const matchesMinistry = ministryFilter === "all" || studentMinistries.includes(ministryFilter);
 
-      return matchesSearch && matchesGrade && matchesMokjang && matchesStatus && matchesMinistry;
+      // 장기결석 필터
+      let matchesAbsence = true;
+      if (absenceFilter !== "all") {
+        const weeksAbsent = longAbsenceMap.get(student.id);
+        if (absenceFilter === "2weeks") {
+          matchesAbsence = weeksAbsent !== undefined && weeksAbsent >= 2;
+        } else if (absenceFilter === "4weeks") {
+          matchesAbsence = weeksAbsent !== undefined && weeksAbsent >= 4;
+        }
+      }
+
+      return matchesSearch && matchesGrade && matchesMokjang && matchesStatus && matchesMinistry && matchesAbsence;
     });
 
     result.sort((a, b) => {
@@ -451,7 +484,7 @@ export default function Students() {
     });
 
     return result;
-  }, [students, searchQuery, gradeFilter, mokjangFilter, statusFilter, ministryFilter, ministryMembers, sortField, sortOrder, user?.role, myMokjangIds]);
+  }, [students, searchQuery, gradeFilter, mokjangFilter, statusFilter, ministryFilter, absenceFilter, ministryMembers, longAbsenceMap, sortField, sortOrder, user?.role, myMokjangIds]);
 
   const totalPages = Math.ceil(filteredAndSortedStudents.length / pageSize);
   const paginatedStudents = filteredAndSortedStudents.slice(
@@ -574,6 +607,19 @@ export default function Students() {
                 ))}
               </SelectContent>
             </Select>
+
+            {user?.role === "admin" && (
+              <Select value={absenceFilter} onValueChange={(v) => { setAbsenceFilter(v); setCurrentPage(1); }}>
+                <SelectTrigger className="w-[120px]" data-testid="filter-absence">
+                  <SelectValue placeholder="전체출석" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">전체출석</SelectItem>
+                  <SelectItem value="2weeks">2주↑ 결석</SelectItem>
+                  <SelectItem value="4weeks">4주↑ 결석</SelectItem>
+                </SelectContent>
+              </Select>
+            )}
 
             <div className="ml-auto hidden md:flex items-center gap-1">
               <Button
@@ -948,11 +994,11 @@ export default function Students() {
             <CardContent className="flex flex-col items-center justify-center py-12">
               <Users className="h-12 w-12 text-muted-foreground/50 mb-4" />
               <p className="text-muted-foreground text-center">
-                {searchQuery || gradeFilter !== "all" || mokjangFilter !== "all" || statusFilter !== "all"
+                {searchQuery || gradeFilter !== "all" || mokjangFilter !== "all" || statusFilter !== "all" || absenceFilter !== "all"
                   ? "검색 결과가 없습니다."
                   : "등록된 학생이 없습니다."}
               </p>
-              {!searchQuery && gradeFilter === "all" && mokjangFilter === "all" && statusFilter === "all" && (
+              {!searchQuery && gradeFilter === "all" && mokjangFilter === "all" && statusFilter === "all" && absenceFilter === "all" && (
                 <p className="text-sm text-muted-foreground text-center">
                   학생 추가 버튼을 눌러 첫 학생을 등록해보세요.
                 </p>

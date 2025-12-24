@@ -1,5 +1,6 @@
 import {
   users, teachers, mokjangs, mokjangTeachers, students, attendanceLogs, reports, longAbsenceContacts,
+  studentObservations,
   type User, type InsertUser,
   type Teacher, type InsertTeacher,
   type Mokjang, type InsertMokjang,
@@ -8,6 +9,7 @@ import {
   type AttendanceLog, type InsertAttendanceLog,
   type Report, type InsertReport,
   type LongAbsenceContact, type InsertLongAbsenceContact,
+  type StudentObservation, type InsertStudentObservation,
   ministries, ministryTeachers, ministryStudents,
   type Ministry, type InsertMinistry,
   type MinistryTeacher, type InsertMinistryTeacher,
@@ -97,6 +99,15 @@ export interface IStorage {
   getTeachersByMinistryId(ministryId: string): Promise<Teacher[]>;
   getAllMinistryTeachers(): Promise<MinistryTeacher[]>;
   getAllMinistryStudents(): Promise<MinistryStudent[]>;
+
+  // Student Observations
+  getObservation(id: string): Promise<StudentObservation | undefined>;
+  getObservationsByStudentId(studentId: string): Promise<StudentObservation[]>;
+  getObservationsByDate(date: string): Promise<StudentObservation[]>;
+  getObservationsByStudentAndDate(studentId: string, date: string): Promise<StudentObservation[]>;
+  createObservation(observation: InsertStudentObservation): Promise<StudentObservation>;
+  updateObservation(id: string, observation: Partial<InsertStudentObservation>): Promise<StudentObservation | undefined>;
+  deleteObservation(id: string): Promise<boolean>;
 }
 
 
@@ -545,6 +556,49 @@ export class DatabaseStorage implements IStorage {
       .innerJoin(ministries, eq(ministryStudents.ministryId, ministries.id))
       .where(eq(ministryStudents.studentId, studentId));
     return result.map(r => r.ministry);
+  }
+
+  // Student Observations Implementation
+  async getObservation(id: string): Promise<StudentObservation | undefined> {
+    const [observation] = await db.select().from(studentObservations).where(eq(studentObservations.id, id));
+    return observation || undefined;
+  }
+
+  async getObservationsByStudentId(studentId: string): Promise<StudentObservation[]> {
+    return await db.select().from(studentObservations)
+      .where(eq(studentObservations.studentId, studentId))
+      .orderBy(desc(studentObservations.observationDate));
+  }
+
+  async getObservationsByDate(date: string): Promise<StudentObservation[]> {
+    return await db.select().from(studentObservations)
+      .where(eq(studentObservations.observationDate, date));
+  }
+
+  async getObservationsByStudentAndDate(studentId: string, date: string): Promise<StudentObservation[]> {
+    return await db.select().from(studentObservations)
+      .where(and(
+        eq(studentObservations.studentId, studentId),
+        eq(studentObservations.observationDate, date)
+      ));
+  }
+
+  async createObservation(observation: InsertStudentObservation): Promise<StudentObservation> {
+    const [result] = await db.insert(studentObservations).values(observation).returning();
+    return result;
+  }
+
+  async updateObservation(id: string, observationData: Partial<InsertStudentObservation>): Promise<StudentObservation | undefined> {
+    const [observation] = await db.update(studentObservations)
+      .set({ ...observationData, updatedAt: new Date() })
+      .where(eq(studentObservations.id, id))
+      .returning();
+    return observation || undefined;
+  }
+
+  async deleteObservation(id: string): Promise<boolean> {
+    const result = await db.delete(studentObservations).where(eq(studentObservations.id, id));
+    return (result.rowCount ?? 0) > 0;
   }
 }
 

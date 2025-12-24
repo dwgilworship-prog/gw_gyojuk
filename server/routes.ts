@@ -643,5 +643,82 @@ export async function registerRoutes(
     }
   });
 
+  // Student Observations Routes
+  // POST /api/observations - 새로운 특이사항 기록 생성
+  app.post("/api/observations", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+
+    const { studentId, content, observationDate, attendanceLogId } = req.body;
+
+    if (!studentId || !content || !observationDate) {
+      return res.status(400).json({ message: "studentId, content, observationDate는 필수입니다." });
+    }
+
+    // 현재 로그인한 사용자의 teacher ID 가져오기
+    const teacher = await storage.getTeacherByUserId(req.user!.id);
+
+    const observation = await storage.createObservation({
+      studentId,
+      teacherId: teacher?.id || null,
+      attendanceLogId: attendanceLogId || null,
+      observationDate,
+      content,
+    });
+
+    res.status(201).json(observation);
+  });
+
+  // GET /api/students/:studentId/observations - 특정 학생의 모든 기록 조회 (최신순)
+  app.get("/api/students/:studentId/observations", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const observations = await storage.getObservationsByStudentId(req.params.studentId);
+    res.json(observations);
+  });
+
+  // GET /api/observations - 날짜별 특이사항 조회
+  app.get("/api/observations", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const { date, studentId } = req.query;
+
+    if (studentId && date) {
+      const observations = await storage.getObservationsByStudentAndDate(
+        studentId as string,
+        date as string
+      );
+      return res.json(observations);
+    }
+
+    if (date && typeof date === "string") {
+      const observations = await storage.getObservationsByDate(date);
+      return res.json(observations);
+    }
+
+    res.json([]);
+  });
+
+  // GET /api/observations/:id - 특정 특이사항 조회
+  app.get("/api/observations/:id", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const observation = await storage.getObservation(req.params.id);
+    if (!observation) return res.sendStatus(404);
+    res.json(observation);
+  });
+
+  // PATCH /api/observations/:id - 기록 수정
+  app.patch("/api/observations/:id", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const observation = await storage.updateObservation(req.params.id, req.body);
+    if (!observation) return res.sendStatus(404);
+    res.json(observation);
+  });
+
+  // DELETE /api/observations/:id - 기록 삭제
+  app.delete("/api/observations/:id", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const deleted = await storage.deleteObservation(req.params.id);
+    if (!deleted) return res.sendStatus(404);
+    res.sendStatus(200);
+  });
+
   return httpServer;
 }

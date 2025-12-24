@@ -1,11 +1,30 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
 import { DashboardLayout } from "@/components/dashboard-layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Calendar } from "@/components/ui/calendar";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
 import {
   Popover,
   PopoverContent,
@@ -24,19 +43,24 @@ import {
   TabsList,
   TabsTrigger,
 } from "@/components/ui/tabs";
-import { UserCheck, CalendarIcon, Check, Clock, X, AlertCircle, Save, Users } from "lucide-react";
+import { UserCheck, CalendarIcon, Check, Clock, X, AlertCircle, Save, Users, FileText, Trash2 } from "lucide-react";
 import { format } from "date-fns";
 import { ko } from "date-fns/locale";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/use-auth";
-import type { Mokjang, Student, AttendanceLog, MokjangTeacher, Teacher } from "@shared/schema";
+import type { Mokjang, Student, AttendanceLog, MokjangTeacher, Teacher, StudentObservation } from "@shared/schema";
 
 type AttendanceStatus = "ATTENDED" | "LATE" | "ABSENT" | "EXCUSED";
 
 interface AttendanceState {
   [studentId: string]: AttendanceStatus;
 }
+
+// 특이사항 폼 스키마
+const observationFormSchema = z.object({
+  content: z.string().min(1, "내용을 입력해주세요"),
+});
 
 const statusConfig: Record<AttendanceStatus, { label: string; icon: typeof Check; variant: "default" | "secondary" | "destructive" | "outline" }> = {
   ATTENDED: { label: "출석", icon: Check, variant: "default" },
@@ -62,7 +86,19 @@ export default function Attendance() {
   const [attendanceState, setAttendanceState] = useState<AttendanceState>({});
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
 
+  // 특이사항 관련 상태
+  const [observationDialogOpen, setObservationDialogOpen] = useState(false);
+  const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
+
   const dateString = format(selectedDate, "yyyy-MM-dd");
+
+  // 특이사항 폼
+  const observationForm = useForm<z.infer<typeof observationFormSchema>>({
+    resolver: zodResolver(observationFormSchema),
+    defaultValues: {
+      content: "",
+    },
+  });
 
   const { data: mokjangs } = useQuery<Mokjang[]>({
     queryKey: ["/api/mokjangs"],
@@ -131,6 +167,29 @@ export default function Attendance() {
     enabled: !!selectedMokjangId,
   });
 
+  // 해당 날짜의 모든 특이사항 조회
+  const { data: observations } = useQuery<StudentObservation[]>({
+    queryKey: ["/api/observations", { date: dateString }],
+    queryFn: async () => {
+      const res = await fetch(`/api/observations?date=${dateString}`);
+      if (!res.ok) return [];
+      return res.json();
+    },
+    enabled: !!selectedMokjangId,
+  });
+
+  // 선택된 학생의 특이사항 조회 (Dialog용)
+  const { data: studentObservations } = useQuery<StudentObservation[]>({
+    queryKey: ["/api/observations", { studentId: selectedStudent?.id, date: dateString }],
+    queryFn: async () => {
+      if (!selectedStudent) return [];
+      const res = await fetch(`/api/observations?studentId=${selectedStudent.id}&date=${dateString}`);
+      if (!res.ok) return [];
+      return res.json();
+    },
+    enabled: !!selectedStudent && observationDialogOpen,
+  });
+
   useEffect(() => {
     if (students && existingAttendance) {
       const newState: AttendanceState = {};
@@ -161,6 +220,40 @@ export default function Attendance() {
     },
   });
 
+  // 특이사항 생성 mutation
+  const createObservationMutation = useMutation({
+    mutationFn: async (data: { content: string }) => {
+      if (!selectedStudent) throw new Error("학생이 선택되지 않았습니다.");
+      return await apiRequest("POST", "/api/observations", {
+        studentId: selectedStudent.id,
+        observationDate: dateString,
+        content: data.content,
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/observations"] });
+      toast({ title: "특이사항이 저장되었습니다." });
+      observationForm.reset();
+    },
+    onError: () => {
+      toast({ title: "저장 실패", description: "다시 시도해주세요.", variant: "destructive" });
+    },
+  });
+
+  // 특이사항 삭제 mutation
+  const deleteObservationMutation = useMutation({
+    mutationFn: async (id: string) => {
+      return await apiRequest("DELETE", `/api/observations/${id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/observations"] });
+      toast({ title: "특이사항이 삭제되었습니다." });
+    },
+    onError: () => {
+      toast({ title: "삭제 실패", description: "다시 시도해주세요.", variant: "destructive" });
+    },
+  });
+
   const handleStatusChange = (studentId: string, status: AttendanceStatus) => {
     setAttendanceState((prev) => ({ ...prev, [studentId]: status }));
   };
@@ -188,6 +281,23 @@ export default function Attendance() {
   const getMokjangName = (mokjangId: string | null) => {
     if (!mokjangId) return "미배정";
     return mokjangs?.find((m) => m.id === mokjangId)?.name || "미배정";
+  };
+
+  // 특정 학생에 해당 날짜에 특이사항이 있는지 확인
+  const hasObservation = (studentId: string) => {
+    return observations?.some((obs) => obs.studentId === studentId);
+  };
+
+  // 특이사항 Dialog 열기
+  const openObservationDialog = (student: Student) => {
+    setSelectedStudent(student);
+    observationForm.reset();
+    setObservationDialogOpen(true);
+  };
+
+  // 특이사항 저장
+  const handleObservationSubmit = (data: z.infer<typeof observationFormSchema>) => {
+    createObservationMutation.mutate(data);
   };
 
   const studentsByMokjang = isAllMokjangsSelected
@@ -322,19 +432,31 @@ export default function Attendance() {
                     <div className="space-y-2">
                       {mokjangStudents.map((student) => {
                         const currentStatus = attendanceState[student.id] || "ATTENDED";
+                        const studentHasObs = hasObservation(student.id);
                         return (
                           <Card key={student.id} data-testid={`card-student-attendance-${student.id}`}>
                             <CardContent className="p-3">
                               <div className="flex items-center justify-between gap-3">
-                                <div className="min-w-0 flex-1">
-                                  <p className="font-medium truncate" data-testid={`text-student-name-${student.id}`}>
-                                    {student.name}
-                                  </p>
-                                  {student.grade && (
-                                    <p className="text-xs text-muted-foreground truncate">
-                                      {student.grade}
+                                <div className="min-w-0 flex-1 flex items-center gap-2">
+                                  <div className="min-w-0 flex-1">
+                                    <p className="font-medium truncate" data-testid={`text-student-name-${student.id}`}>
+                                      {student.name}
                                     </p>
-                                  )}
+                                    {student.grade && (
+                                      <p className="text-xs text-muted-foreground truncate">
+                                        {student.grade}
+                                      </p>
+                                    )}
+                                  </div>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className={`h-8 w-8 flex-shrink-0 ${studentHasObs ? "text-blue-500" : "text-muted-foreground"}`}
+                                    onClick={() => openObservationDialog(student)}
+                                    title="특이사항"
+                                  >
+                                    <FileText className="h-4 w-4" />
+                                  </Button>
                                 </div>
                                 <div className="flex gap-1 flex-shrink-0">
                                   {(Object.keys(statusConfig) as AttendanceStatus[]).map((status) => {
@@ -369,19 +491,31 @@ export default function Attendance() {
               <div className="space-y-2">
                 {activeStudents.map((student) => {
                   const currentStatus = attendanceState[student.id] || "ATTENDED";
+                  const studentHasObs = hasObservation(student.id);
                   return (
                     <Card key={student.id} data-testid={`card-student-attendance-${student.id}`}>
                       <CardContent className="p-3">
                         <div className="flex items-center justify-between gap-3">
-                          <div className="min-w-0 flex-1">
-                            <p className="font-medium truncate" data-testid={`text-student-name-${student.id}`}>
-                              {student.name}
-                            </p>
-                            {student.grade && (
-                              <p className="text-xs text-muted-foreground truncate">
-                                {student.grade}
+                          <div className="min-w-0 flex-1 flex items-center gap-2">
+                            <div className="min-w-0 flex-1">
+                              <p className="font-medium truncate" data-testid={`text-student-name-${student.id}`}>
+                                {student.name}
                               </p>
-                            )}
+                              {student.grade && (
+                                <p className="text-xs text-muted-foreground truncate">
+                                  {student.grade}
+                                </p>
+                              )}
+                            </div>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className={`h-8 w-8 flex-shrink-0 ${studentHasObs ? "text-blue-500" : "text-muted-foreground"}`}
+                              onClick={() => openObservationDialog(student)}
+                              title="특이사항"
+                            >
+                              <FileText className="h-4 w-4" />
+                            </Button>
                           </div>
                           <div className="flex gap-1 flex-shrink-0">
                             {(Object.keys(statusConfig) as AttendanceStatus[]).map((status) => {
@@ -420,7 +554,7 @@ export default function Attendance() {
                     <Badge variant="destructive">결석 {summary.ABSENT}</Badge>
                     <Badge variant="outline">사유 {summary.EXCUSED}</Badge>
                   </div>
-                  <Button 
+                  <Button
                     onClick={() => saveMutation.mutate()}
                     disabled={saveMutation.isPending}
                     data-testid="button-save-attendance"
@@ -434,6 +568,86 @@ export default function Attendance() {
           </>
         )}
       </div>
+
+      {/* 특이사항 Dialog */}
+      <Dialog open={observationDialogOpen} onOpenChange={setObservationDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>
+              {selectedStudent?.name} - 특이사항
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            {/* 기존 특이사항 목록 */}
+            {studentObservations && studentObservations.length > 0 && (
+              <div className="space-y-2">
+                <h4 className="text-sm font-medium text-muted-foreground">
+                  {format(selectedDate, "yyyy년 M월 d일", { locale: ko })} 기록
+                </h4>
+                <div className="space-y-2 max-h-40 overflow-y-auto">
+                  {studentObservations.map((obs) => (
+                    <div
+                      key={obs.id}
+                      className="flex items-start justify-between gap-2 p-2 rounded-md bg-muted/50"
+                    >
+                      <p className="text-sm flex-1">{obs.content}</p>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-6 w-6 text-muted-foreground hover:text-destructive"
+                        onClick={() => deleteObservationMutation.mutate(obs.id)}
+                        disabled={deleteObservationMutation.isPending}
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* 새 특이사항 입력 폼 */}
+            <Form {...observationForm}>
+              <form onSubmit={observationForm.handleSubmit(handleObservationSubmit)} className="space-y-4">
+                <FormField
+                  control={observationForm.control}
+                  name="content"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>새 특이사항</FormLabel>
+                      <FormControl>
+                        <Textarea
+                          placeholder="특이사항을 입력하세요..."
+                          className="resize-none"
+                          rows={3}
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <DialogFooter>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setObservationDialogOpen(false)}
+                  >
+                    닫기
+                  </Button>
+                  <Button
+                    type="submit"
+                    disabled={createObservationMutation.isPending}
+                  >
+                    {createObservationMutation.isPending ? "저장 중..." : "저장"}
+                  </Button>
+                </DialogFooter>
+              </form>
+            </Form>
+          </div>
+        </DialogContent>
+      </Dialog>
     </DashboardLayout>
   );
 }

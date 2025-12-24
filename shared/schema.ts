@@ -163,6 +163,7 @@ export const studentsRelations = relations(students, ({ one, many }) => ({
   attendanceLogs: many(attendanceLogs),
   history: many(studentHistory),
   longAbsenceContacts: many(longAbsenceContacts),
+  observations: many(studentObservations),
 }));
 
 export const attendanceLogs = pgTable("attendance_logs", {
@@ -242,6 +243,33 @@ export const longAbsenceContactsRelations = relations(longAbsenceContacts, ({ on
   }),
 }));
 
+// 학생 특이사항 기록 테이블
+export const studentObservations = pgTable("student_observations", {
+  id: varchar("id", { length: 36 }).primaryKey().default(sql`gen_random_uuid()`),
+  studentId: varchar("student_id", { length: 36 }).notNull().references(() => students.id, { onDelete: "cascade" }),
+  teacherId: varchar("teacher_id", { length: 36 }).references(() => teachers.id, { onDelete: "set null" }),
+  attendanceLogId: varchar("attendance_log_id", { length: 36 }).references(() => attendanceLogs.id, { onDelete: "set null" }),
+  observationDate: date("observation_date").notNull(),
+  content: text("content").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const studentObservationsRelations = relations(studentObservations, ({ one }) => ({
+  student: one(students, {
+    fields: [studentObservations.studentId],
+    references: [students.id],
+  }),
+  teacher: one(teachers, {
+    fields: [studentObservations.teacherId],
+    references: [teachers.id],
+  }),
+  attendanceLog: one(attendanceLogs, {
+    fields: [studentObservations.attendanceLogId],
+    references: [attendanceLogs.id],
+  }),
+}));
+
 export const insertUserSchema = createInsertSchema(users).omit({
   id: true,
   createdAt: true,
@@ -308,6 +336,12 @@ export const insertLongAbsenceContactSchema = createInsertSchema(longAbsenceCont
   createdAt: true,
 });
 
+export const insertStudentObservationSchema = createInsertSchema(studentObservations).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
 export type InsertTeacher = z.infer<typeof insertTeacherSchema>;
@@ -332,3 +366,5 @@ export type InsertStudentHistory = z.infer<typeof insertStudentHistorySchema>;
 export type StudentHistory = typeof studentHistory.$inferSelect;
 export type InsertLongAbsenceContact = z.infer<typeof insertLongAbsenceContactSchema>;
 export type LongAbsenceContact = typeof longAbsenceContacts.$inferSelect;
+export type InsertStudentObservation = z.infer<typeof insertStudentObservationSchema>;
+export type StudentObservation = typeof studentObservations.$inferSelect;
