@@ -783,20 +783,20 @@ export const styles: Record<string, React.CSSProperties> = {
     bottom: 0,
     left: 0,
     right: 0,
-    height: 88,
     background: '#FFFFFF',
     borderTop: '1px solid #F2F4F6',
     display: 'flex',
     justifyContent: 'space-around',
-    alignItems: 'flex-start',
-    paddingTop: 14,
+    alignItems: 'center',
+    paddingTop: 10,
+    paddingBottom: 8,
     touchAction: 'none',
   },
   navBtn: {
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'center',
-    gap: 4,
+    gap: 2,
     background: 'none',
     border: 'none',
     color: '#B0B8C1',
@@ -808,7 +808,7 @@ export const styles: Record<string, React.CSSProperties> = {
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'center',
-    gap: 4,
+    gap: 2,
     background: 'none',
     border: 'none',
     color: '#191F28',
@@ -817,7 +817,7 @@ export const styles: Record<string, React.CSSProperties> = {
     transition: 'color 0.2s',
   },
   navLabel: {
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: 600,
   },
 
@@ -1186,6 +1186,7 @@ export const globalStyles = `
 
   .nav-bar {
     touch-action: none;
+    padding-bottom: calc(8px + env(safe-area-inset-bottom)) !important;
   }
 
   @keyframes shimmer {

@@ -36,28 +36,28 @@ export const Navigation = ({
         style={currentView === 'home' ? styles.navBtnActive : styles.navBtn}
         onClick={() => { triggerHaptic(); setCurrentView('home'); }}
       >
-        <span style={{ fontSize: 22 }}>🏠</span>
+        <span style={{ fontSize: 20 }}>🏠</span>
         <span style={styles.navLabel}>홈</span>
       </button>
       <button
         style={currentView === 'attendance' ? styles.navBtnActive : styles.navBtn}
         onClick={() => { triggerHaptic(); setCurrentView('attendance'); }}
       >
-        <span style={{ fontSize: 22 }}>✅</span>
+        <span style={{ fontSize: 20 }}>✅</span>
         <span style={styles.navLabel}>출석</span>
       </button>
       <button
         style={currentView === 'students' ? styles.navBtnActive : styles.navBtn}
         onClick={() => { triggerHaptic(); setCurrentView('students'); }}
       >
-        <span style={{ fontSize: 22 }}>👥</span>
+        <span style={{ fontSize: 20 }}>👥</span>
         <span style={styles.navLabel}>학생</span>
       </button>
       <button
         style={currentView === 'settings' ? styles.navBtnActive : styles.navBtn}
         onClick={() => { triggerHaptic(); setCurrentView('settings'); }}
       >
-        <span style={{ fontSize: 22 }}>⚙️</span>
+        <span style={{ fontSize: 20 }}>⚙️</span>
         <span style={styles.navLabel}>설정</span>
       </button>
     </nav>
