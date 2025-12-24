@@ -521,6 +521,9 @@ export default function TeacherDashboard() {
 
   const handleLogout = useCallback(() => {
     triggerHaptic(20);
+    // 인사 애니메이션 세션 데이터 클리어
+    sessionStorage.removeItem('greeting_animation_played');
+    sessionStorage.removeItem('greeting_message');
     logoutMutation.mutate();
   }, [triggerHaptic, logoutMutation]);
 

@@ -10,6 +10,7 @@ export { AttendanceDonut } from './AttendanceDonut';
 export { Skeleton, SkeletonCard } from './Skeleton';
 export { CalendarModal } from './CalendarModal';
 export { ObservationModal } from './ObservationModal';
+export { TypingGreeting } from './TypingGreeting';
 
 // Views
 export { HomeView } from './HomeView';

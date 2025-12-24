@@ -1,6 +1,7 @@
 import React from 'react';
 import { styles } from './styles';
 import { AttendanceDonut } from './AttendanceDonut';
+import { TypingGreeting } from './TypingGreeting';
 import type { UIStudent } from './types';
 
 interface HomeViewProps {
@@ -44,15 +45,7 @@ export const HomeView = ({
         transition: 'all 0.6s cubic-bezier(0.16, 1, 0.3, 1)',
       }}>
         <p style={styles.dateChip}>{todayDate}</p>
-        <h1 style={styles.mainGreeting}>
-          {teacherInfo.name} 선생님,
-          <br />
-          <span style={styles.greetingSub}>
-            {todayBirthdayStudents.length > 0
-              ? `오늘 ${todayBirthdayStudents[0].name} 생일이에요`
-              : '오늘도 함께해요'}
-          </span>
-        </h1>
+        <TypingGreeting teacherName={teacherInfo.name} />
       </div>
     </header>
 
