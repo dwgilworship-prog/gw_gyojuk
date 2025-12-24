@@ -481,7 +481,7 @@ export default function Students() {
     const ids = Array.from(selectedIds);
     bulkUpdateMutation.mutate({
       ids,
-      data: { mokjangId: mokjangId === "none" ? undefined : mokjangId }
+      data: { mokjangId: mokjangId === "none" ? null : mokjangId }
     });
   };
 

@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 
 interface ConfettiProps {
   active: boolean;
@@ -6,9 +6,15 @@ interface ConfettiProps {
 
 export const Confetti = ({ active }: ConfettiProps) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [isFading, setIsFading] = useState(false);
 
   useEffect(() => {
-    if (!active || !canvasRef.current) return;
+    if (!active) {
+      setIsFading(false);
+      return;
+    }
+
+    if (!canvasRef.current) return;
 
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d');
@@ -79,14 +85,22 @@ export const Confetti = ({ active }: ConfettiProps) => {
 
     animate();
 
-    const timeout = setTimeout(() => {
+    // 2.5초 후 페이드아웃 시작
+    const fadeTimeout = setTimeout(() => {
+      setIsFading(true);
+    }, 2500);
+
+    // 3.5초 후 애니메이션 정리 (페이드아웃 1초 후)
+    const cleanupTimeout = setTimeout(() => {
       cancelAnimationFrame(animationId);
       ctx.clearRect(0, 0, canvas.width, canvas.height);
-    }, 3000);
+    }, 3500);
 
     return () => {
       cancelAnimationFrame(animationId);
-      clearTimeout(timeout);
+      clearTimeout(fadeTimeout);
+      clearTimeout(cleanupTimeout);
+      setIsFading(false);
     };
   }, [active]);
 
@@ -103,6 +117,8 @@ export const Confetti = ({ active }: ConfettiProps) => {
         height: '100%',
         pointerEvents: 'none',
         zIndex: 1000,
+        opacity: isFading ? 0 : 1,
+        transition: 'opacity 1s ease-out',
       }}
     />
   );

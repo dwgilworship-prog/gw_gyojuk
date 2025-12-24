@@ -164,6 +164,11 @@ export default function TeacherDashboard() {
     setTimeout(() => setIsLoaded(true), 100);
   }, []);
 
+  // 탭 전환 시 바텀시트 닫기
+  useEffect(() => {
+    setSelectedStudent(null);
+  }, [currentView]);
+
   // 햅틱 피드백
   const triggerHaptic = useCallback((duration = 10) => {
     if (navigator.vibrate) {
@@ -353,8 +358,8 @@ export default function TeacherDashboard() {
         await apiRequest('POST', '/api/attendance', attendanceToSave);
       }
 
+      await queryClient.invalidateQueries({ queryKey: ["/api/attendance"] });
       setLocalAttendance({});
-      queryClient.invalidateQueries({ queryKey: ["/api/attendance"] });
 
       if (checkedCount === totalCount) {
         setShowConfetti(true);

@@ -1248,6 +1248,33 @@ export const globalStyles = `
       right: 20px !important;
       z-index: 9998 !important;
     }
+
+    /* 바텀시트 오버레이 - fixed로 전체 화면 덮기 */
+    .bottom-sheet-overlay {
+      position: fixed !important;
+      top: 0 !important;
+      left: 0 !important;
+      right: 0 !important;
+      bottom: 0 !important;
+      z-index: 10000 !important;
+    }
+
+    /* 토스트 메시지 - 항상 최상단에 표시 */
+    .toast-message {
+      position: fixed !important;
+      bottom: calc(80px + env(safe-area-inset-bottom, 0px) + 80px) !important;
+      z-index: 99999 !important;
+    }
+
+    /* 캘린더 모달 - 뷰포트 기준 중앙 배치 & 최상위 계층 */
+    .calendar-modal-overlay {
+      position: fixed !important;
+      top: 0 !important;
+      left: 0 !important;
+      right: 0 !important;
+      bottom: 0 !important;
+      z-index: 100000 !important;
+    }
   }
 
   /* 태블릿 */

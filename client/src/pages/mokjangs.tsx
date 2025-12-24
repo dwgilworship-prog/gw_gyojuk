@@ -169,6 +169,7 @@ export default function Mokjangs() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/mokjangs", assigningMokjang?.id, "teachers"] });
       queryClient.invalidateQueries({ queryKey: ["/api/mokjangs"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/mokjang-teachers"] });
       toast({ title: "교사가 배정되었습니다." });
       setSelectedTeacherId("");
     },
@@ -184,6 +185,7 @@ export default function Mokjangs() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/mokjangs", assigningMokjang?.id, "teachers"] });
       queryClient.invalidateQueries({ queryKey: ["/api/mokjangs"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/mokjang-teachers"] });
       toast({ title: "교사 배정이 해제되었습니다." });
     },
     onError: () => {
