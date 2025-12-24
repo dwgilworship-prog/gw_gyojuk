@@ -2,7 +2,9 @@
   "permissions": {
     "allow": [
       "Bash(npm run db:push:*)",
-      "Bash(npx drizzle-kit:*)"
+      "Bash(npx drizzle-kit:*)",
+      "Bash(mkdir:*)",
+      "Bash(npm run check:*)"
     ]
   }
 }
