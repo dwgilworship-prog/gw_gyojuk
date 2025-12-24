@@ -38,12 +38,39 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ["**/*.{js,css,html,ico,png,svg,woff,woff2}"],
+        // ✅ 핵심 설정: 새 서비스 워커 즉시 활성화
+        skipWaiting: true,
+        clientsClaim: true,
+        cleanupOutdatedCaches: true,
+        // SPA 라우팅 지원
+        navigateFallback: "/index.html",
         runtimeCaching: [
           {
+            // API 요청: 무조건 최신 데이터 (오프라인 지원 포기)
+            urlPattern: /^\/api\/.*/,
+            handler: "NetworkOnly",
+          },
+          {
+            // 정적 자산(JS, CSS, 이미지): 캐시 우선 (빌드 시 파일명이 바뀌므로 안전)
+            urlPattern: ({ request }) =>
+              request.destination === "script" ||
+              request.destination === "style" ||
+              request.destination === "image",
+            handler: "CacheFirst",
+            options: {
+              cacheName: "static-resources-v1",
+              expiration: {
+                maxEntries: 100,
+                maxAgeSeconds: 60 * 60 * 24 * 30, // 30일
+              },
+            },
+          },
+          {
+            // Google Fonts
             urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
             handler: "CacheFirst",
             options: {
-              cacheName: "google-fonts-cache",
+              cacheName: "google-fonts-cache-v1",
               expiration: { maxEntries: 10, maxAgeSeconds: 60 * 60 * 24 * 365 },
             },
           },
@@ -51,16 +78,8 @@ export default defineConfig({
             urlPattern: /^https:\/\/fonts\.gstatic\.com\/.*/i,
             handler: "CacheFirst",
             options: {
-              cacheName: "gstatic-fonts-cache",
+              cacheName: "gstatic-fonts-cache-v1",
               expiration: { maxEntries: 10, maxAgeSeconds: 60 * 60 * 24 * 365 },
-            },
-          },
-          {
-            urlPattern: /\/api\/.*/i,
-            handler: "NetworkFirst",
-            options: {
-              cacheName: "api-cache",
-              expiration: { maxEntries: 50, maxAgeSeconds: 60 * 5 },
             },
           },
         ],
