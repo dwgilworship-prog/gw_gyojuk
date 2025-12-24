@@ -4,23 +4,34 @@ import {
   useMutation,
   UseMutationResult,
 } from "@tanstack/react-query";
-import { User as SelectUser, InsertUser } from "@shared/schema";
+import { User as SelectUser, InsertUser, Teacher } from "@shared/schema";
 import { getQueryFn, apiRequest, queryClient } from "../lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+
+type UserWithTeacher = SelectUser & {
+  teacher?: Teacher | null;
+};
 
 type ChangePasswordData = {
   currentPassword?: string;
   newPassword: string;
 };
 
+type RegisterData = {
+  email: string;
+  password: string;
+  name: string;
+  phone?: string;
+};
+
 type AuthContextType = {
-  user: SelectUser | null;
+  user: UserWithTeacher | null;
   isLoading: boolean;
   error: Error | null;
-  loginMutation: UseMutationResult<SelectUser, Error, LoginData>;
+  loginMutation: UseMutationResult<UserWithTeacher, Error, LoginData>;
   logoutMutation: UseMutationResult<void, Error, void>;
-  registerMutation: UseMutationResult<SelectUser, Error, InsertUser>;
-  changePasswordMutation: UseMutationResult<SelectUser, Error, ChangePasswordData>;
+  registerMutation: UseMutationResult<UserWithTeacher, Error, RegisterData>;
+  changePasswordMutation: UseMutationResult<UserWithTeacher, Error, ChangePasswordData>;
 };
 
 type LoginData = Pick<InsertUser, "email" | "password">;
@@ -33,7 +44,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     data: user,
     error,
     isLoading,
-  } = useQuery<SelectUser | undefined, Error>({
+  } = useQuery<UserWithTeacher | undefined, Error>({
     queryKey: ["/api/user"],
     queryFn: getQueryFn({ on401: "returnNull" }),
   });
@@ -43,7 +54,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const res = await apiRequest("POST", "/api/login", credentials);
       return await res.json();
     },
-    onSuccess: (user: SelectUser) => {
+    onSuccess: (user: UserWithTeacher) => {
       queryClient.setQueryData(["/api/user"], user);
     },
     onError: (error: Error) => {
@@ -56,11 +67,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   });
 
   const registerMutation = useMutation({
-    mutationFn: async (credentials: InsertUser) => {
+    mutationFn: async (credentials: RegisterData) => {
       const res = await apiRequest("POST", "/api/register", credentials);
       return await res.json();
     },
-    onSuccess: (user: SelectUser) => {
+    onSuccess: (user: UserWithTeacher) => {
       queryClient.setQueryData(["/api/user"], user);
     },
     onError: (error: Error) => {
@@ -94,7 +105,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const res = await apiRequest("POST", "/api/change-password", data);
       return await res.json();
     },
-    onSuccess: (user: SelectUser) => {
+    onSuccess: (user: UserWithTeacher) => {
       queryClient.setQueryData(["/api/user"], user);
       toast({
         title: "비밀번호가 변경되었습니다",

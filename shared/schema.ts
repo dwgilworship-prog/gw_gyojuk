@@ -11,7 +11,7 @@ export const historyTypeEnum = pgEnum("history_type", ["mokjang_change", "status
 export const contactMethodEnum = pgEnum("contact_method", ["phone", "visit", "message"]);
 export const genderEnum = pgEnum("gender", ["M", "F"]);
 export const baptismEnum = pgEnum("baptism", ["infant", "baptized", "confirmed", "none"]);
-export const teacherStatusEnum = pgEnum("teacher_status", ["active", "rest", "resigned"]);
+export const teacherStatusEnum = pgEnum("teacher_status", ["pending", "active", "rest", "resigned"]);
 export const ministryRoleEnum = pgEnum("ministry_role", ["admin", "member", "leader"]);
 
 export const users = pgTable("users", {

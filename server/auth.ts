@@ -67,20 +67,37 @@ export function setupAuth(app: Express) {
 
   app.post("/api/register", async (req, res, next) => {
     try {
-      const existingUser = await storage.getUserByEmail(req.body.email);
+      const { email, password, name, phone } = req.body;
+
+      if (!name || name.trim() === "") {
+        return res.status(400).send("이름을 입력해주세요");
+      }
+
+      const existingUser = await storage.getUserByEmail(email);
       if (existingUser) {
         return res.status(400).send("이메일이 이미 존재합니다");
       }
 
       const user = await storage.createUser({
-        ...req.body,
-        password: await hashPassword(req.body.password),
+        email,
+        password: await hashPassword(password),
+      });
+
+      // teachers 테이블에 pending 상태로 추가
+      const teacher = await storage.createTeacher({
+        userId: user.id,
+        name: name.trim(),
+        phone: phone || null,
+        status: "pending",
       });
 
       req.login(user, (err) => {
         if (err) return next(err);
         const { password: _, ...safeUser } = user;
-        res.status(201).json(safeUser);
+        res.status(201).json({
+          ...safeUser,
+          teacher: teacher,
+        });
       });
     } catch (error) {
       next(error);
@@ -88,15 +105,22 @@ export function setupAuth(app: Express) {
   });
 
   app.post("/api/login", (req, res, next) => {
-    passport.authenticate("local", (err: any, user: SelectUser | false) => {
+    passport.authenticate("local", async (err: any, user: SelectUser | false) => {
       if (err) return next(err);
       if (!user) {
         return res.status(401).send("이메일 또는 비밀번호가 올바르지 않습니다");
       }
-      req.login(user, (err) => {
+      req.login(user, async (err) => {
         if (err) return next(err);
         const { password, ...safeUser } = user;
-        res.status(200).json(safeUser);
+
+        // teacher 정보도 함께 반환
+        const teacher = await storage.getTeacherByUserId(safeUser.id);
+
+        res.status(200).json({
+          ...safeUser,
+          teacher: teacher || null,
+        });
       });
     })(req, res, next);
   });
@@ -108,10 +132,17 @@ export function setupAuth(app: Express) {
     });
   });
 
-  app.get("/api/user", (req, res) => {
+  app.get("/api/user", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     const { password, ...safeUser } = req.user!;
-    res.json(safeUser);
+
+    // teacher 정보도 함께 반환
+    const teacher = await storage.getTeacherByUserId(safeUser.id);
+
+    res.json({
+      ...safeUser,
+      teacher: teacher || null,
+    });
   });
 
   app.post("/api/change-password", async (req, res, next) => {
@@ -144,10 +175,17 @@ export function setupAuth(app: Express) {
       }
 
       // 세션 업데이트
-      req.login(updatedUser, (err) => {
+      req.login(updatedUser, async (err) => {
         if (err) return next(err);
         const { password: _, ...safeUser } = updatedUser;
-        res.status(200).json(safeUser);
+
+        // teacher 정보도 함께 반환
+        const teacher = await storage.getTeacherByUserId(safeUser.id);
+
+        res.status(200).json({
+          ...safeUser,
+          teacher: teacher || null,
+        });
       });
     } catch (error) {
       next(error);

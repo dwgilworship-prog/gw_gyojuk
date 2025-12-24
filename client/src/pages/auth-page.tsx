@@ -20,6 +20,8 @@ const registerSchema = z.object({
   email: z.string().email("올바른 이메일을 입력해주세요"),
   password: z.string().min(6, "비밀번호는 최소 6자 이상이어야 합니다"),
   confirmPassword: z.string(),
+  name: z.string().min(1, "이름을 입력해주세요"),
+  phone: z.string().optional(),
 }).refine((data) => data.password === data.confirmPassword, {
   message: "비밀번호가 일치하지 않습니다",
   path: ["confirmPassword"],
@@ -40,7 +42,7 @@ export default function AuthPage() {
 
   const registerForm = useForm<RegisterFormData>({
     resolver: zodResolver(registerSchema),
-    defaultValues: { email: "", password: "", confirmPassword: "" },
+    defaultValues: { email: "", password: "", confirmPassword: "", name: "", phone: "" },
   });
 
   useEffect(() => {
@@ -57,7 +59,7 @@ export default function AuthPage() {
 
   const onRegister = (data: RegisterFormData) => {
     registerMutation.mutate(
-      { email: data.email, password: data.password },
+      { email: data.email, password: data.password, name: data.name, phone: data.phone },
       { onSuccess: () => setLocation("/") }
     );
   };
@@ -137,10 +139,44 @@ export default function AuthPage() {
                   <form onSubmit={registerForm.handleSubmit(onRegister)} className="space-y-4">
                     <FormField
                       control={registerForm.control}
+                      name="name"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>이름 *</FormLabel>
+                          <FormControl>
+                            <Input
+                              placeholder="홍길동"
+                              data-testid="input-register-name"
+                              {...field}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={registerForm.control}
+                      name="phone"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>연락처</FormLabel>
+                          <FormControl>
+                            <Input
+                              placeholder="010-0000-0000"
+                              data-testid="input-register-phone"
+                              {...field}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={registerForm.control}
                       name="email"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>이메일</FormLabel>
+                          <FormLabel>이메일 *</FormLabel>
                           <FormControl>
                             <Input
                               type="email"

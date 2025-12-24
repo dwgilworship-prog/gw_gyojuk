@@ -49,7 +49,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Plus, UserCog, Search, Pencil, Trash2, Phone, Calendar, Crown, Cake, Mail,
-  LayoutGrid, LayoutList, MoreVertical, Users
+  LayoutGrid, LayoutList, MoreVertical, Users, CheckCircle2
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -71,13 +71,14 @@ const teacherFormSchema = z.object({
   phone: z.string().optional(),
   birth: z.string().optional(),
   startedAt: z.string().optional(),
-  status: z.enum(["active", "rest", "resigned"]).default("active"),
+  status: z.enum(["pending", "active", "rest", "resigned"]).default("active"),
   ministryIds: z.array(z.string()).optional(),
 });
 
 type TeacherFormData = z.infer<typeof teacherFormSchema>;
 
-const statusLabels: Record<string, { label: string; variant: "default" | "secondary" | "outline" }> = {
+const statusLabels: Record<string, { label: string; variant: "default" | "secondary" | "outline" | "destructive" }> = {
+  pending: { label: "승인대기", variant: "destructive" },
   active: { label: "활동", variant: "default" },
   rest: { label: "휴식", variant: "secondary" },
   resigned: { label: "사임", variant: "outline" },
@@ -222,6 +223,21 @@ export default function Teachers() {
     },
     onError: () => {
       toast({ title: "삭제 실패", description: "다시 시도해주세요.", variant: "destructive" });
+    },
+  });
+
+  const approveMutation = useMutation({
+    mutationFn: async (id: string) => {
+      return await apiRequest("PATCH", `/api/teachers/${id}`, { status: "active" });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/teachers"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/stats"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/dashboard-widgets"] });
+      toast({ title: "교사가 승인되었습니다." });
+    },
+    onError: () => {
+      toast({ title: "승인 실패", description: "다시 시도해주세요.", variant: "destructive" });
     },
   });
 
@@ -381,6 +397,7 @@ export default function Teachers() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">전체상태</SelectItem>
+                <SelectItem value="pending">승인대기</SelectItem>
                 <SelectItem value="active">활동</SelectItem>
                 <SelectItem value="rest">휴식</SelectItem>
                 <SelectItem value="resigned">사임</SelectItem>
@@ -492,6 +509,18 @@ export default function Teachers() {
                               {user?.role === "admin" && (
                                 <TableCell onClick={(e) => e.stopPropagation()}>
                                   <div className="flex items-center gap-1">
+                                    {teacher.status === "pending" && (
+                                      <Button
+                                        size="icon"
+                                        variant="ghost"
+                                        onClick={() => approveMutation.mutate(teacher.id)}
+                                        disabled={approveMutation.isPending}
+                                        title="승인"
+                                        data-testid={`button-approve-teacher-${teacher.id}`}
+                                      >
+                                        <CheckCircle2 className="h-4 w-4 text-green-600" />
+                                      </Button>
+                                    )}
                                     <Button
                                       size="icon"
                                       variant="ghost"
@@ -598,6 +627,12 @@ export default function Teachers() {
                               )}
                               {user?.role === "admin" && (
                                 <>
+                                  {teacher.status === "pending" && (
+                                    <DropdownMenuItem onClick={() => approveMutation.mutate(teacher.id)} className="text-green-600">
+                                      <CheckCircle2 className="h-4 w-4 mr-2" />
+                                      승인
+                                    </DropdownMenuItem>
+                                  )}
                                   <DropdownMenuItem onClick={() => handleOpenEdit(teacher)}>
                                     <Pencil className="h-4 w-4 mr-2" />
                                     수정
@@ -738,6 +773,7 @@ export default function Teachers() {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
+                          <SelectItem value="pending">승인대기</SelectItem>
                           <SelectItem value="active">활동</SelectItem>
                           <SelectItem value="rest">휴식</SelectItem>
                           <SelectItem value="resigned">사임</SelectItem>
