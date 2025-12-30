@@ -7,6 +7,28 @@ async function throwIfResNotOk(res: Response) {
   }
 }
 
+// 캐시 무효화 함수
+async function invalidateApiCache(url: string) {
+  if ("caches" in window) {
+    try {
+      const cache = await caches.open("api-cache");
+      // URL 패턴에 맞는 모든 캐시 삭제
+      const keys = await cache.keys();
+      const baseUrl = url.split("?")[0]; // 쿼리 파라미터 제거
+      const urlParts = baseUrl.split("/");
+      const resource = urlParts.slice(0, 3).join("/"); // /api/resource 형태
+
+      for (const request of keys) {
+        if (request.url.includes(resource)) {
+          await cache.delete(request);
+        }
+      }
+    } catch (e) {
+      console.warn("캐시 무효화 실패:", e);
+    }
+  }
+}
+
 export async function apiRequest(
   method: string,
   url: string,
@@ -20,6 +42,12 @@ export async function apiRequest(
   });
 
   await throwIfResNotOk(res);
+
+  // 데이터 변경 요청 성공 시 캐시 무효화
+  if (["POST", "PUT", "PATCH", "DELETE"].includes(method.toUpperCase())) {
+    await invalidateApiCache(url);
+  }
+
   return res;
 }
 

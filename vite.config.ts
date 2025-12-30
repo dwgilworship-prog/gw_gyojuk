@@ -7,7 +7,7 @@ export default defineConfig({
   plugins: [
     react(),
     VitePWA({
-      registerType: "autoUpdate",
+      registerType: "prompt",
       includeAssets: ["favicon_gw_final.png", "apple-touch-icon.png"],
       manifest: {
         name: "GIL Worship - 청소년부 사역 관리",
@@ -16,7 +16,10 @@ export default defineConfig({
         theme_color: "#7c3aed",
         background_color: "#ffffff",
         display: "standalone",
+        orientation: "portrait",
+        scope: "/",
         start_url: "/",
+        categories: ["productivity", "utilities"],
         icons: [
           {
             src: "pwa-192x192.png",
@@ -46,9 +49,19 @@ export default defineConfig({
         navigateFallback: "/index.html",
         runtimeCaching: [
           {
-            // API 요청: 무조건 최신 데이터 (오프라인 지원 포기)
+            // API GET 요청: StaleWhileRevalidate (오프라인 지원)
             urlPattern: /^\/api\/.*/,
-            handler: "NetworkOnly",
+            handler: "StaleWhileRevalidate",
+            options: {
+              cacheName: "api-cache",
+              expiration: {
+                maxEntries: 100,
+                maxAgeSeconds: 60 * 60 * 24, // 24시간
+              },
+              cacheableResponse: {
+                statuses: [0, 200],
+              },
+            },
           },
           {
             // 정적 자산(JS, CSS, 이미지): 캐시 우선 (빌드 시 파일명이 바뀌므로 안전)

@@ -7,7 +7,15 @@
       "Bash(npm run check:*)",
       "Bash(npm run build:*)",
       "Bash(npm install:*)",
-      "Bash(npx tsc:*)"
+      "Bash(npx tsc:*)",
+      "Bash(file \"C:\\\\Users\\\\wnsdlf\\\\Desktop\\\\gw_gyojuk\\\\client\\\\public\"/*.png)",
+      "Bash(cat:*)",
+      "Bash(git -C \"C:\\\\Users\\\\wnsdlf\\\\Desktop\\\\gw_gyojuk\" log --oneline -10)",
+      "Bash(git -C \"C:\\\\Users\\\\wnsdlf\\\\Desktop\\\\gw_gyojuk\" log --name-status --grep=\"pwa\\\\|PWA\\\\|service\\\\|manifest\" --all)",
+      "Bash(stat:*)",
+      "Bash(where:*)",
+      "Bash(where convert:*)",
+      "Bash(node:*)"
     ]
   }
 }
