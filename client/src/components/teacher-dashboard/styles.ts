@@ -1382,7 +1382,9 @@ export const globalStyles = `
       bottom: 0 !important;
       left: 0 !important;
       right: 0 !important;
+      height: calc(80px + env(safe-area-inset-bottom, 0px)) !important;
       padding-bottom: env(safe-area-inset-bottom, 0px) !important;
+      background: #FFFFFF !important;
       z-index: 9999 !important;
     }
 
