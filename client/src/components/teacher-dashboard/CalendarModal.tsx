@@ -61,7 +61,7 @@ export const CalendarModal = ({
   const todayKey = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
 
   return (
-    <div style={styles.calendarOverlay} className="calendar-modal-overlay" onClick={onClose}>
+    <div className="calendar-modal-overlay" onClick={onClose}>
       <div style={styles.calendarModal} onClick={e => e.stopPropagation()}>
         <div style={styles.calendarHeader}>
           <button style={styles.calendarNavBtn} onClick={() => setCurrentMonth(new Date(year, month - 1))}>

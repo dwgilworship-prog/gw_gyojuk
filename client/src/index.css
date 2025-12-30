@@ -208,6 +208,115 @@
 /* 교사 대시보드는 자체 라이트 테마 사용 - 전역 다크모드 무시 */
 /* .dark .nav-bar는 필요 시 관리자 대시보드용으로 별도 클래스 사용 */
 
+/* ===== 교사 대시보드 헤더 스타일 (웹/PWA 통합) ===== */
+/* 미디어 쿼리 대신 env()를 사용하여 노치 영역 대응 */
+
+.home-header {
+  padding: 32px 24px 28px;
+  padding-top: calc(32px + env(safe-area-inset-top, 0px));
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.att-header {
+  padding: 24px 16px 12px;
+  padding-top: calc(24px + env(safe-area-inset-top, 0px));
+  display: flex;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.95);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.student-list-header {
+  padding: 32px 24px 20px;
+  padding-top: calc(32px + env(safe-area-inset-top, 0px));
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.settings-header {
+  padding: 32px 24px 20px;
+  padding-top: calc(32px + env(safe-area-inset-top, 0px));
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+/* ===== Floating Elements (웹/PWA 통합) ===== */
+
+/* 토스트 메시지 */
+.toast-message {
+  position: fixed;
+  bottom: calc(80px + env(safe-area-inset-bottom, 0px) + 20px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(25, 31, 40, 0.95);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  color: #FFFFFF;
+  padding: 14px 24px;
+  border-radius: 50px;
+  font-size: 15px;
+  font-weight: 600;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  z-index: 10000;
+  white-space: nowrap;
+}
+
+/* 저장 버튼 플로팅 */
+.save-btn-fixed {
+  position: fixed;
+  bottom: calc(80px + env(safe-area-inset-bottom, 0px) + 12px);
+  left: 20px;
+  right: 20px;
+  z-index: 9998;
+}
+
+/* 바텀시트 오버레이 */
+.bottom-sheet-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0,0,0,0.4);
+  display: flex;
+  align-items: flex-end;
+  z-index: 10000;
+  transition: opacity 0.25s;
+}
+
+/* 캘린더 모달 오버레이 */
+.calendar-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0,0,0,0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10001;
+  padding: 20px;
+}
+
 /* iOS PWA input 텍스트 색상 문제 해결 */
 @supports (-webkit-touch-callout: none) {
   @media all and (display-mode: standalone) {

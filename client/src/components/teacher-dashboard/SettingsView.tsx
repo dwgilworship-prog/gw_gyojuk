@@ -27,7 +27,7 @@ export const SettingsView = ({
   isLogoutPending,
 }: SettingsViewProps) => (
   <div style={styles.container} className="hide-scrollbar">
-    <header style={styles.settingsHeader} className="settings-header">
+    <header className="settings-header">
       <h1 style={styles.settingsTitle}>내 정보</h1>
     </header>
 

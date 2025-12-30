@@ -31,9 +31,7 @@ export const styles: Record<string, React.CSSProperties> = {
   },
 
   // ===== 홈 =====
-  homeHeader: {
-    padding: '32px 24px 28px',
-  },
+  // homeHeader: index.css의 .home-header로 이동됨
   dateChip: {
     display: 'inline-block',
     padding: '8px 14px',
@@ -283,12 +281,7 @@ export const styles: Record<string, React.CSSProperties> = {
   },
 
   // ===== 출석 =====
-  attHeader: {
-    padding: '24px 16px 12px',
-    display: 'flex',
-    alignItems: 'center',
-    background: '#FFFFFF',
-  },
+  // attHeader: index.css의 .att-header로 이동됨
   backBtn: {
     width: 44,
     height: 44,
@@ -485,12 +478,7 @@ export const styles: Record<string, React.CSSProperties> = {
   },
 
   // 저장
-  bottomFixed: {
-    position: 'absolute',
-    bottom: 100,
-    left: 20,
-    right: 20,
-  },
+  // bottomFixed: index.css의 .save-btn-fixed로 이동됨
   saveBtn: {
     width: '100%',
     padding: '18px',
@@ -505,19 +493,7 @@ export const styles: Record<string, React.CSSProperties> = {
   },
 
   // ===== 캘린더 =====
-  calendarOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    background: 'rgba(0,0,0,0.5)',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    zIndex: 200,
-    padding: 20,
-  },
+  // calendarOverlay: index.css의 .calendar-modal-overlay로 이동됨
   calendarModal: {
     width: '100%',
     maxWidth: 340,
@@ -615,9 +591,7 @@ export const styles: Record<string, React.CSSProperties> = {
   },
 
   // ===== 학생 목록 =====
-  studentListHeader: {
-    padding: '32px 24px 20px',
-  },
+  // studentListHeader: index.css의 .student-list-header로 이동됨
   studentListTitle: {
     fontSize: 28,
     fontWeight: 800,
@@ -827,18 +801,7 @@ export const styles: Record<string, React.CSSProperties> = {
   },
 
   // ===== 바텀시트 =====
-  overlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    background: 'rgba(0,0,0,0.4)',
-    display: 'flex',
-    alignItems: 'flex-end',
-    zIndex: 100,
-    transition: 'opacity 0.25s',
-  },
+  // overlay: index.css의 .bottom-sheet-overlay로 이동됨
   sheet: {
     width: '100%',
     maxHeight: '85%',
@@ -1126,28 +1089,10 @@ export const styles: Record<string, React.CSSProperties> = {
   },
 
   // ===== 토스트 =====
-  toast: {
-    position: 'absolute',
-    bottom: 110,
-    left: '50%',
-    transform: 'translateX(-50%)',
-    background: 'rgba(25, 31, 40, 0.95)',
-    backdropFilter: 'blur(12px)',
-    color: '#FFFFFF',
-    padding: '14px 24px',
-    borderRadius: 50,
-    fontSize: 15,
-    fontWeight: 600,
-    boxShadow: '0 8px 24px rgba(0,0,0,0.2)',
-    transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
-    zIndex: 200,
-    whiteSpace: 'nowrap',
-  },
+  // toast: index.css의 .toast-message로 이동됨
 
   // ===== 설정 화면 =====
-  settingsHeader: {
-    padding: '32px 24px 20px',
-  },
+  // settingsHeader: index.css의 .settings-header로 이동됨
   settingsTitle: {
     fontSize: 28,
     fontWeight: 800,
@@ -1323,140 +1268,22 @@ export const globalStyles = `
       height: auto !important;
       border-radius: 0 !important;
       box-shadow: none !important;
-      /* padding-top은 각 헤더 컴포넌트에서 직접 처리 */
       padding-left: env(safe-area-inset-left, 0px) !important;
       padding-right: env(safe-area-inset-right, 0px) !important;
       padding-bottom: 0 !important;
       display: flex !important;
       flex-direction: column !important;
     }
-
-    /* 모바일 웹에서도 캘린더 모달 - 뷰포트 기준 중앙 배치 */
-    .calendar-modal-overlay {
-      position: fixed !important;
-      top: 0 !important;
-      left: 0 !important;
-      right: 0 !important;
-      bottom: 0 !important;
-      z-index: 100000 !important;
-    }
-
-    /* 모바일 웹에서도 바텀시트 오버레이 - fixed로 전체 화면 덮기 */
-    .bottom-sheet-overlay {
-      position: fixed !important;
-      top: 0 !important;
-      left: 0 !important;
-      right: 0 !important;
-      bottom: 0 !important;
-      z-index: 10000 !important;
-    }
-
-    /* .nav-bar는 index.css로 이동됨 (env() fallback으로 웹/PWA 통합) */
-
-    /* 저장 버튼 플로팅 - nav 바로 위에 고정 */
-    .save-btn-fixed {
-      position: fixed !important;
-      bottom: 92px !important;
-      left: 20px !important;
-      right: 20px !important;
-      z-index: 9998 !important;
-    }
-
-    /* 토스트 메시지 */
-    .toast-message {
-      position: fixed !important;
-      bottom: 160px !important;
-      z-index: 99999 !important;
-    }
+    /* Floating elements (.calendar-modal-overlay, .bottom-sheet-overlay, .save-btn-fixed, .toast-message)
+       스타일은 index.css로 이동됨 (env() fallback으로 웹/PWA 통합) */
   }
 
-  /* iOS PWA Safe Area - 헤더에 노치 영역 padding 적용 */
+  /* iOS PWA Safe Area */
+  /* 헤더 및 Floating elements 스타일은 index.css로 이동됨 (env() fallback으로 웹/PWA 통합) */
   @media all and (display-mode: standalone) {
-    /* 홈 헤더 - 배경색이 노치까지 확장 + 상단 고정 */
-    .home-header {
-      position: sticky !important;
-      top: 0 !important;
-      z-index: 100 !important;
-      padding-top: calc(32px + env(safe-area-inset-top, 0px)) !important;
-      background: rgba(255, 255, 255, 0.95) !important;
-      backdrop-filter: blur(12px) !important;
-      -webkit-backdrop-filter: blur(12px) !important;
-    }
-
-    /* 출석 헤더 - 상단 고정 */
-    .att-header {
-      position: sticky !important;
-      top: 0 !important;
-      z-index: 100 !important;
-      padding-top: calc(24px + env(safe-area-inset-top, 0px)) !important;
-      background: rgba(255, 255, 255, 0.95) !important;
-      backdrop-filter: blur(12px) !important;
-      -webkit-backdrop-filter: blur(12px) !important;
-    }
-
-    /* 학생목록 헤더 - 상단 고정 */
-    .student-list-header {
-      position: sticky !important;
-      top: 0 !important;
-      z-index: 100 !important;
-      padding-top: calc(32px + env(safe-area-inset-top, 0px)) !important;
-      background: rgba(255, 255, 255, 0.95) !important;
-      backdrop-filter: blur(12px) !important;
-      -webkit-backdrop-filter: blur(12px) !important;
-    }
-
-    /* 설정 헤더 - 상단 고정 */
-    .settings-header {
-      position: sticky !important;
-      top: 0 !important;
-      z-index: 100 !important;
-      padding-top: calc(32px + env(safe-area-inset-top, 0px)) !important;
-      background: rgba(255, 255, 255, 0.95) !important;
-      backdrop-filter: blur(12px) !important;
-      -webkit-backdrop-filter: blur(12px) !important;
-    }
-
-    /* .nav-bar는 index.css로 이동됨 (env() fallback으로 웹/PWA 통합) */
-
     /* 컨텐츠 영역이 nav 뒤에 가려지지 않도록 여유 공간 확보 */
     .teacher-dashboard-device > div:first-child {
       padding-bottom: calc(90px + env(safe-area-inset-bottom, 0px)) !important;
-    }
-
-    /* 저장 버튼 플로팅 - nav 바로 위에 고정 */
-    .save-btn-fixed {
-      position: fixed !important;
-      bottom: calc(80px + env(safe-area-inset-bottom, 0px) + 12px) !important;
-      left: 20px !important;
-      right: 20px !important;
-      z-index: 9998 !important;
-    }
-
-    /* 바텀시트 오버레이 - fixed로 전체 화면 덮기 */
-    .bottom-sheet-overlay {
-      position: fixed !important;
-      top: 0 !important;
-      left: 0 !important;
-      right: 0 !important;
-      bottom: 0 !important;
-      z-index: 10000 !important;
-    }
-
-    /* 토스트 메시지 - 항상 최상단에 표시 */
-    .toast-message {
-      position: fixed !important;
-      bottom: calc(80px + env(safe-area-inset-bottom, 0px) + 80px) !important;
-      z-index: 99999 !important;
-    }
-
-    /* 캘린더 모달 - 뷰포트 기준 중앙 배치 & 최상위 계층 */
-    .calendar-modal-overlay {
-      position: fixed !important;
-      top: 0 !important;
-      left: 0 !important;
-      right: 0 !important;
-      bottom: 0 !important;
-      z-index: 100000 !important;
     }
   }
 

@@ -1,7 +1,7 @@
 import React from 'react';
 import { styles } from './styles';
 import { Confetti } from './Confetti';
-import { Skeleton, SkeletonCard } from './Skeleton';
+import { SkeletonCard } from './Skeleton';
 import { CalendarModal } from './CalendarModal';
 import type { UIStudent } from './types';
 
@@ -75,13 +75,11 @@ export const AttendanceView = ({
   hasObservation,
   reportContent,
   setReportContent,
-  reportPrayerRequest,
-  setReportPrayerRequest,
 }: AttendanceViewProps) => (
   <div style={styles.container} className="hide-scrollbar">
     <Confetti active={showConfetti} />
 
-    <header style={styles.attHeader} className="att-header">
+    <header className="att-header">
       <button style={styles.backBtn} onClick={() => setCurrentView('home')}>
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
           <path d="M15 19l-7-7 7-7" stroke="#191F28" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
@@ -289,7 +287,7 @@ export const AttendanceView = ({
     )}
 
     {/* 저장 버튼 */}
-    <div style={styles.bottomFixed} className="save-btn-fixed">
+    <div className="save-btn-fixed">
       <button
         style={{
           ...styles.saveBtn,

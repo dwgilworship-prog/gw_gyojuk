@@ -32,7 +32,6 @@ export const BottomSheet = ({
     <div
       className="bottom-sheet-overlay"
       style={{
-        ...styles.overlay,
         opacity: sheetClosing ? 0 : 1,
       }}
       onClick={closeSheet}
