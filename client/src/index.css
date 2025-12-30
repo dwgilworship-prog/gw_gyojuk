@@ -181,23 +181,32 @@
 
   /* iOS PWA Safe Area 지원 - 스크롤 문제 해결 */
   @media all and (display-mode: standalone) {
+    /* 전체 페이지 스크롤 방지 (헤더/푸터가 떨리는 것 방지) */
     html, body {
       overflow: hidden;
+      height: 100%;
+      position: fixed; /* iOS 고무줄 효과 방지용 강력 고정 */
+      width: 100%;
     }
 
+    /* 실제 스크롤은 root 안에서만 발생 */
     #root {
       height: 100%;
-      overflow-y: auto;
-      -webkit-overflow-scrolling: touch;
+      overflow-y: auto; /* 여기가 스크롤 영역 */
+      -webkit-overflow-scrolling: touch; /* 부드러운 스크롤 */
       overscroll-behavior: none;
-      padding-top: env(safe-area-inset-top);
       padding-left: env(safe-area-inset-left);
       padding-right: env(safe-area-inset-right);
       background-color: hsl(var(--background));
     }
 
-    /* 하단 네비게이션 바 safe area */
+    /* 하단 네비게이션 바 safe area - fixed로 화면 하단 고정 */
     .nav-bar {
+      position: fixed !important;
+      bottom: 0 !important;
+      left: 0 !important;
+      right: 0 !important;
+      z-index: 9999 !important;
       padding-bottom: env(safe-area-inset-bottom) !important;
       height: calc(80px + env(safe-area-inset-bottom)) !important;
     }

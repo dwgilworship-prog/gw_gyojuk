@@ -34,7 +34,7 @@ export const StudentListView = ({
 
   return (
     <div style={styles.container} className="hide-scrollbar">
-      <header style={styles.studentListHeader}>
+      <header style={styles.studentListHeader} className="student-list-header">
         <h1 style={styles.studentListTitle}>내 학생</h1>
         <p style={styles.studentListSub}>{teacherInfo.group} · {myGroupStudents.length}명</p>
       </header>

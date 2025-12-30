@@ -31,7 +31,7 @@ export function MobileTabBar() {
   const tabItems = user.role === "admin" ? adminTabItems : teacherTabItems;
 
   return (
-    <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur-lg border-t z-50 safe-area-pb">
+    <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur-lg border-t border-border z-50 pb-[env(safe-area-inset-bottom)] h-[calc(60px+env(safe-area-inset-bottom))]">
       <div className="flex items-center justify-around h-16">
         {tabItems.map((item) => {
           const isActive = location === item.url;

@@ -24,7 +24,7 @@ export function DashboardLayout({ children, title }: DashboardLayoutProps) {
         <AppSidebar />
 
         <div className="flex flex-col flex-1 min-w-0">
-          <header className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur-lg">
+          <header className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur-lg pt-[env(safe-area-inset-top)] h-[calc(3.5rem+env(safe-area-inset-top))]">
             <div className="flex items-center gap-4 h-14 px-4">
               <SidebarTrigger data-testid="button-sidebar-toggle" />
               <div className="flex items-center gap-3 md:hidden">
@@ -46,7 +46,7 @@ export function DashboardLayout({ children, title }: DashboardLayoutProps) {
             </div>
           </header>
 
-          <main className="flex-1 overflow-auto pb-20 md:pb-0">
+          <main className="flex-1 overflow-auto pb-[calc(60px+env(safe-area-inset-bottom))] md:pb-0">
             {children}
           </main>
         </div>

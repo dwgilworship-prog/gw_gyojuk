@@ -81,7 +81,7 @@ export const AttendanceView = ({
   <div style={styles.container} className="hide-scrollbar">
     <Confetti active={showConfetti} />
 
-    <header style={styles.attHeader}>
+    <header style={styles.attHeader} className="att-header">
       <button style={styles.backBtn} onClick={() => setCurrentView('home')}>
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
           <path d="M15 19l-7-7 7-7" stroke="#191F28" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />

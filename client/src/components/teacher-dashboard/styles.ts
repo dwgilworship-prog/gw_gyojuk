@@ -781,7 +781,7 @@ export const styles: Record<string, React.CSSProperties> = {
 
   // ===== 네비 =====
   nav: {
-    position: 'absolute',
+    position: 'fixed',
     bottom: 0,
     left: 0,
     right: 0,
@@ -793,7 +793,7 @@ export const styles: Record<string, React.CSSProperties> = {
     alignItems: 'flex-start',
     paddingTop: 12,
     touchAction: 'none',
-    zIndex: 100,
+    zIndex: 9999,
   },
   navBtn: {
     display: 'flex',
@@ -1321,12 +1321,37 @@ export const globalStyles = `
       height: auto !important;
       border-radius: 0 !important;
       box-shadow: none !important;
-      padding-top: env(safe-area-inset-top, 0px) !important;
+      /* padding-top은 각 헤더 컴포넌트에서 직접 처리 */
       padding-left: env(safe-area-inset-left, 0px) !important;
       padding-right: env(safe-area-inset-right, 0px) !important;
       padding-bottom: 0 !important;
       display: flex !important;
       flex-direction: column !important;
+    }
+  }
+
+  /* iOS PWA Safe Area - 헤더에 노치 영역 padding 적용 */
+  @media all and (display-mode: standalone) {
+    /* 홈 헤더 - 배경색이 노치까지 확장 */
+    .home-header {
+      padding-top: calc(32px + env(safe-area-inset-top, 0px)) !important;
+      background: #FFFFFF !important;
+    }
+
+    /* 출석 헤더 */
+    .att-header {
+      padding-top: calc(24px + env(safe-area-inset-top, 0px)) !important;
+      background: #FFFFFF !important;
+    }
+
+    /* 학생목록 헤더 */
+    .student-list-header {
+      padding-top: calc(32px + env(safe-area-inset-top, 0px)) !important;
+    }
+
+    /* 설정 헤더 */
+    .settings-header {
+      padding-top: calc(32px + env(safe-area-inset-top, 0px)) !important;
     }
 
     /* 하단 네비게이션 바 - fixed로 변경하여 브라우저 UI 위에 표시 */
