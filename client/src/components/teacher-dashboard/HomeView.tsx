@@ -36,7 +36,7 @@ export const HomeView = ({
   setCurrentView,
   setSelectedStudent,
 }: HomeViewProps) => (
-  <div style={styles.container} className="hide-scrollbar">
+  <div className="view-container hide-scrollbar">
     <header className="home-header">
       <div style={{
         opacity: isLoaded ? 1 : 0,

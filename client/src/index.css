@@ -317,6 +317,16 @@
   padding: 20px;
 }
 
+/* ===== View Container (본문 컨텐츠 영역) ===== */
+.view-container {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  /* 네비게이션 바 높이 + safe-area + 여유공간 */
+  padding-bottom: calc(80px + env(safe-area-inset-bottom, 0px) + 20px);
+}
+
 /* iOS PWA input 텍스트 색상 문제 해결 */
 @supports (-webkit-touch-callout: none) {
   @media all and (display-mode: standalone) {

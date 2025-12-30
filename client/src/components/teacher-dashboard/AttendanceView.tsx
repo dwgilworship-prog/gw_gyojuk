@@ -76,7 +76,7 @@ export const AttendanceView = ({
   reportContent,
   setReportContent,
 }: AttendanceViewProps) => (
-  <div style={styles.container} className="hide-scrollbar">
+  <div className="view-container hide-scrollbar">
     <Confetti active={showConfetti} />
 
     <header className="att-header">

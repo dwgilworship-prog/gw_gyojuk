@@ -33,7 +33,7 @@ export const StudentListView = ({
   const studentList = getFilteredStudentList();
 
   return (
-    <div style={styles.container} className="hide-scrollbar">
+    <div className="view-container hide-scrollbar">
       <header className="student-list-header">
         <h1 style={styles.studentListTitle}>내 학생</h1>
         <p style={styles.studentListSub}>{teacherInfo.group} · {myGroupStudents.length}명</p>
@@ -158,8 +158,6 @@ export const StudentListView = ({
           ))
         )}
       </div>
-
-      <div style={{ height: 100 }} />
     </div>
   );
 };

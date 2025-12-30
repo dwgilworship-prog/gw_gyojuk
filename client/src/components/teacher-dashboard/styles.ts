@@ -22,13 +22,7 @@ export const styles: Record<string, React.CSSProperties> = {
     display: 'flex',
     flexDirection: 'column',
   },
-  container: {
-    flex: 1,
-    overflowY: 'auto',
-    overflowX: 'hidden',
-    paddingBottom: 100,
-    WebkitOverflowScrolling: 'touch',
-  },
+  // container: index.css의 .view-container로 이동됨
 
   // ===== 홈 =====
   // homeHeader: index.css의 .home-header로 이동됨
@@ -1279,13 +1273,7 @@ export const globalStyles = `
   }
 
   /* iOS PWA Safe Area */
-  /* 헤더 및 Floating elements 스타일은 index.css로 이동됨 (env() fallback으로 웹/PWA 통합) */
-  @media all and (display-mode: standalone) {
-    /* 컨텐츠 영역이 nav 뒤에 가려지지 않도록 여유 공간 확보 */
-    .teacher-dashboard-device > div:first-child {
-      padding-bottom: calc(90px + env(safe-area-inset-bottom, 0px)) !important;
-    }
-  }
+  /* 헤더, Floating elements, View container 스타일은 index.css로 이동됨 (env() fallback으로 웹/PWA 통합) */
 
   /* 태블릿 */
   @media (min-width: 431px) and (max-width: 768px) {
