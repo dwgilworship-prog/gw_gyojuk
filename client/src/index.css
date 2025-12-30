@@ -182,40 +182,40 @@
       background-color: hsl(var(--background));
     }
 
-    /* 하단 네비게이션 바 safe area - fixed로 화면 하단 고정 */
-    .nav-bar {
-      position: fixed !important;
-      bottom: 0 !important;
-      left: 0 !important;
-      right: 0 !important;
-      z-index: 9999 !important;
-      padding-bottom: env(safe-area-inset-bottom) !important;
-      height: calc(80px + env(safe-area-inset-bottom)) !important;
-    }
+    /* .nav-bar는 아래 전역 스타일로 이동됨 (env() fallback으로 웹/PWA 통합) */
   }
+}
 
-  /* iOS PWA input 텍스트 색상 문제 해결 */
-  @supports (-webkit-touch-callout: none) {
-    @media all and (display-mode: standalone) {
-      /* 
-       * 기존에 input 텍스트 색상을 inherit !important로 강제하던 코드를 제거함.
-       * 이 코드가 개별 컴포넌트의 스타일을 덮어써서 텍스트가 안 보이는 문제를 유발함.
-       */
-      /*
-      input,
-      textarea,
-      select {
-        color: inherit !important;
-        -webkit-text-fill-color: currentColor !important;
-      }
-      */
+/* ===== 교사 대시보드 네비게이션 바 (웹/PWA 통합) ===== */
+.nav-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: calc(80px + env(safe-area-inset-bottom, 0px));
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  padding-top: 12px;
+  background-color: #FFFFFF;
+  border-top: 1px solid #F2F4F6;
+  display: flex;
+  justify-content: space-around;
+  align-items: flex-start;
+  touch-action: none;
+  -webkit-touch-callout: none;
+  z-index: 9999;
+}
 
-      input::placeholder,
-      textarea::placeholder {
-        color: hsl(var(--muted-foreground)) !important;
-        -webkit-text-fill-color: hsl(var(--muted-foreground)) !important;
-        opacity: 1;
-      }
+/* 교사 대시보드는 자체 라이트 테마 사용 - 전역 다크모드 무시 */
+/* .dark .nav-bar는 필요 시 관리자 대시보드용으로 별도 클래스 사용 */
+
+/* iOS PWA input 텍스트 색상 문제 해결 */
+@supports (-webkit-touch-callout: none) {
+  @media all and (display-mode: standalone) {
+    input::placeholder,
+    textarea::placeholder {
+      color: hsl(var(--muted-foreground)) !important;
+      -webkit-text-fill-color: hsl(var(--muted-foreground)) !important;
+      opacity: 1;
     }
   }
 }

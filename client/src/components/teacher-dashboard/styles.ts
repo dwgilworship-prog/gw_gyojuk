@@ -780,21 +780,23 @@ export const styles: Record<string, React.CSSProperties> = {
   },
 
   // ===== 네비 =====
-  nav: {
-    position: 'fixed',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    height: 80,
-    background: '#FFFFFF',
-    borderTop: '1px solid #F2F4F6',
-    display: 'flex',
-    justifyContent: 'space-around',
-    alignItems: 'flex-start',
-    paddingTop: 12,
-    touchAction: 'none',
-    zIndex: 9999,
-  },
+  // nav 스타일은 index.css의 .nav-bar 클래스로 이동됨
+  // (inline style + CSS !important 충돌 해결을 위해)
+  // nav: {
+  //   position: 'fixed',
+  //   bottom: 0,
+  //   left: 0,
+  //   right: 0,
+  //   height: 80,
+  //   background: '#FFFFFF',
+  //   borderTop: '1px solid #F2F4F6',
+  //   display: 'flex',
+  //   justifyContent: 'space-around',
+  //   alignItems: 'flex-start',
+  //   paddingTop: 12,
+  //   touchAction: 'none',
+  //   zIndex: 9999,
+  // },
   navBtn: {
     display: 'flex',
     flexDirection: 'column',
@@ -1349,14 +1351,7 @@ export const globalStyles = `
       z-index: 10000 !important;
     }
 
-    /* 하단 네비게이션 바 */
-    .nav-bar {
-      position: fixed !important;
-      bottom: 0 !important;
-      left: 0 !important;
-      right: 0 !important;
-      z-index: 9999 !important;
-    }
+    /* .nav-bar는 index.css로 이동됨 (env() fallback으로 웹/PWA 통합) */
 
     /* 저장 버튼 플로팅 - nav 바로 위에 고정 */
     .save-btn-fixed {
@@ -1421,17 +1416,7 @@ export const globalStyles = `
       -webkit-backdrop-filter: blur(12px) !important;
     }
 
-    /* 하단 네비게이션 바 - fixed로 변경하여 브라우저 UI 위에 표시 */
-    .nav-bar {
-      position: fixed !important;
-      bottom: 0 !important;
-      left: 0 !important;
-      right: 0 !important;
-      height: calc(80px + env(safe-area-inset-bottom, 0px)) !important;
-      padding-bottom: env(safe-area-inset-bottom, 0px) !important;
-      background: #FFFFFF !important;
-      z-index: 9999 !important;
-    }
+    /* .nav-bar는 index.css로 이동됨 (env() fallback으로 웹/PWA 통합) */
 
     /* 컨텐츠 영역이 nav 뒤에 가려지지 않도록 여유 공간 확보 */
     .teacher-dashboard-device > div:first-child {

@@ -31,7 +31,7 @@ export const Navigation = ({
   }, []);
 
   return (
-    <nav ref={navRef} style={styles.nav} className="nav-bar">
+    <nav ref={navRef} className="nav-bar">
       <button
         style={currentView === 'home' ? styles.navBtnActive : styles.navBtn}
         onClick={() => { triggerHaptic(); setCurrentView('home'); }}
