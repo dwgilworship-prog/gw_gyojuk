@@ -191,10 +191,15 @@
       -webkit-overflow-scrolling: touch;
       overscroll-behavior: none;
       padding-top: env(safe-area-inset-top);
-      padding-bottom: env(safe-area-inset-bottom);
       padding-left: env(safe-area-inset-left);
       padding-right: env(safe-area-inset-right);
       background-color: hsl(var(--background));
+    }
+
+    /* 하단 네비게이션 바 safe area */
+    .nav-bar {
+      padding-bottom: env(safe-area-inset-bottom) !important;
+      height: calc(80px + env(safe-area-inset-bottom)) !important;
     }
   }
 
