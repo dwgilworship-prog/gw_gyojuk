@@ -5,11 +5,11 @@
 /* LIGHT MODE - Ethereal Glass Design System */
 :root {
   color-scheme: light dark;
-  --button-outline: rgba(0,0,0, .10);
-  --badge-outline: rgba(0,0,0, .05);
+  --button-outline: rgba(0, 0, 0, .10);
+  --badge-outline: rgba(0, 0, 0, .05);
   --opaque-button-border-intensity: -8;
-  --elevate-1: rgba(0,0,0, .03);
-  --elevate-2: rgba(0,0,0, .08);
+  --elevate-1: rgba(0, 0, 0, .03);
+  --elevate-2: rgba(0, 0, 0, .08);
   --background: 220 14% 96%;
   --foreground: 224 71% 4%;
   --border: 220 13% 91%;
@@ -89,11 +89,11 @@
 
 /* DARK MODE - Ethereal Glass Design System (Slate 950 base) */
 .dark {
-  --button-outline: rgba(255,255,255, .10);
-  --badge-outline: rgba(255,255,255, .05);
+  --button-outline: rgba(255, 255, 255, .10);
+  --badge-outline: rgba(255, 255, 255, .05);
   --opaque-button-border-intensity: 9;
-  --elevate-1: rgba(255,255,255, .04);
-  --elevate-2: rgba(255,255,255, .09);
+  --elevate-1: rgba(255, 255, 255, .04);
+  --elevate-2: rgba(255, 255, 255, .09);
   --background: 222 47% 6%;
   --foreground: 210 40% 98%;
   --border: 217 33% 17%;
@@ -181,19 +181,24 @@
 
   /* iOS PWA Safe Area 지원 - 스크롤 문제 해결 */
   @media all and (display-mode: standalone) {
+
     /* 전체 페이지 스크롤 방지 (헤더/푸터가 떨리는 것 방지) */
-    html, body {
+    html,
+    body {
       overflow: hidden;
       height: 100%;
-      position: fixed; /* iOS 고무줄 효과 방지용 강력 고정 */
+      position: fixed;
+      /* iOS 고무줄 효과 방지용 강력 고정 */
       width: 100%;
     }
 
     /* 실제 스크롤은 root 안에서만 발생 */
     #root {
       height: 100%;
-      overflow-y: auto; /* 여기가 스크롤 영역 */
-      -webkit-overflow-scrolling: touch; /* 부드러운 스크롤 */
+      overflow-y: auto;
+      /* 여기가 스크롤 영역 */
+      -webkit-overflow-scrolling: touch;
+      /* 부드러운 스크롤 */
       overscroll-behavior: none;
       padding-left: env(safe-area-inset-left);
       padding-right: env(safe-area-inset-right);
@@ -215,12 +220,18 @@
   /* iOS PWA input 텍스트 색상 문제 해결 */
   @supports (-webkit-touch-callout: none) {
     @media all and (display-mode: standalone) {
+      /* 
+       * 기존에 input 텍스트 색상을 inherit !important로 강제하던 코드를 제거함.
+       * 이 코드가 개별 컴포넌트의 스타일을 덮어써서 텍스트가 안 보이는 문제를 유발함.
+       */
+      /*
       input,
       textarea,
       select {
         color: inherit !important;
         -webkit-text-fill-color: currentColor !important;
       }
+      */
 
       input::placeholder,
       textarea::placeholder {
