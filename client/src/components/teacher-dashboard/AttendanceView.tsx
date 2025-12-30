@@ -36,6 +36,11 @@ interface AttendanceViewProps {
   // 특이사항 관련
   onOpenObservation?: (student: UIStudent) => void;
   hasObservation?: (studentId: string) => boolean;
+  // 목장 메모 관련
+  reportContent?: string;
+  setReportContent?: (content: string) => void;
+  reportPrayerRequest?: string;
+  setReportPrayerRequest?: (prayerRequest: string) => void;
 }
 
 export const AttendanceView = ({
@@ -68,6 +73,10 @@ export const AttendanceView = ({
   handleCopyReport,
   onOpenObservation,
   hasObservation,
+  reportContent,
+  setReportContent,
+  reportPrayerRequest,
+  setReportPrayerRequest,
 }: AttendanceViewProps) => (
   <div style={styles.container} className="hide-scrollbar">
     <Confetti active={showConfetti} />
@@ -235,6 +244,53 @@ export const AttendanceView = ({
         })
       )}
     </div>
+
+    {/* 목장 메모 입력 영역 */}
+    {setReportContent && (
+      <div style={{
+        margin: '16px 20px 0',
+        padding: '16px',
+        paddingBottom: 100,
+        background: '#fff',
+        borderRadius: 16,
+        boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
+      }}>
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 8,
+          marginBottom: 12,
+        }}>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+            <polyline points="14 2 14 8 20 8" />
+            <line x1="16" y1="13" x2="8" y2="13" />
+            <line x1="16" y1="17" x2="8" y2="17" />
+            <polyline points="10 9 9 9 8 9" />
+          </svg>
+          <span style={{ fontSize: 14, fontWeight: 600, color: '#191F28' }}>목장 메모</span>
+        </div>
+        <textarea
+          value={reportContent || ''}
+          onChange={(e) => setReportContent(e.target.value)}
+          placeholder="이번 주 목장 특이사항을 입력하세요"
+          style={{
+            width: '100%',
+            minHeight: 80,
+            padding: 12,
+            border: '1px solid #E5E8EB',
+            borderRadius: 12,
+            fontSize: 14,
+            resize: 'vertical',
+            outline: 'none',
+            transition: 'border-color 0.2s',
+            fontFamily: 'inherit',
+          }}
+          onFocus={(e) => e.target.style.borderColor = '#7c3aed'}
+          onBlur={(e) => e.target.style.borderColor = '#E5E8EB'}
+        />
+      </div>
+    )}
 
     {/* 저장 버튼 */}
     <div style={styles.bottomFixed} className="save-btn-fixed">

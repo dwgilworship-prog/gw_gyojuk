@@ -23,6 +23,7 @@ import {
   BarChart3,
   LogOut,
   UserCog,
+  FileText,
 } from "lucide-react";
 
 const adminMenuItems = [
@@ -32,6 +33,7 @@ const adminMenuItems = [
   { title: "목장 관리", url: "/mokjangs", icon: BookOpen },
   { title: "출석 체크", url: "/attendance", icon: UserCheck },
   { title: "출석 현황", url: "/attendance-dashboard", icon: ClipboardCheck },
+  { title: "목장 보고서", url: "/report-dashboard", icon: FileText },
   { title: "사역부서", url: "/ministries", icon: Users },
   { title: "통계/리포트", url: "/stats", icon: BarChart3 },
   { title: "문자 발송", url: "/sms", icon: Mail },

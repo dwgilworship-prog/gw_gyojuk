@@ -28,8 +28,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { UserCheck, CalendarIcon, Check, Clock, X, AlertCircle, Users, FileText, Search } from "lucide-react";
-import { format } from "date-fns";
+import { UserCheck, CalendarIcon, Check, Clock, X, AlertCircle, Users, FileText, Search, ChevronLeft, ChevronRight } from "lucide-react";
+import { format, addWeeks, subWeeks } from "date-fns";
 import { ko } from "date-fns/locale";
 import { Button } from "@/components/ui/button";
 import type { Mokjang } from "@shared/schema";
@@ -130,27 +130,45 @@ export default function AttendanceDashboard() {
       <div className="p-4 md:p-6 space-y-6">
         {/* 날짜 선택 */}
         <div className="flex items-center justify-between">
-          <Popover open={isCalendarOpen} onOpenChange={setIsCalendarOpen}>
-            <PopoverTrigger asChild>
-              <Button variant="outline" className="gap-2">
-                <CalendarIcon className="h-4 w-4" />
-                {format(selectedDate, "yyyy년 M월 d일 (EEE)", { locale: ko })}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0" align="start">
-              <Calendar
-                mode="single"
-                selected={selectedDate}
-                onSelect={(date) => {
-                  if (date) {
-                    setSelectedDate(date);
-                    setIsCalendarOpen(false);
-                  }
-                }}
-                locale={ko}
-              />
-            </PopoverContent>
-          </Popover>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="icon" onClick={() => setSelectedDate(subWeeks(selectedDate, 1))}>
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <Popover open={isCalendarOpen} onOpenChange={setIsCalendarOpen}>
+              <PopoverTrigger asChild>
+                <Button variant="outline" className="gap-2">
+                  <CalendarIcon className="h-4 w-4" />
+                  {format(selectedDate, "yyyy년 M월 d일 (EEEE)", { locale: ko })}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="single"
+                  selected={selectedDate}
+                  onSelect={(date) => {
+                    if (date) {
+                      setSelectedDate(date);
+                      setIsCalendarOpen(false);
+                    }
+                  }}
+                  disabled={(date) => {
+                    const today = new Date();
+                    today.setHours(23, 59, 59, 999);
+                    return date.getDay() !== 0 || date > today;
+                  }}
+                  locale={ko}
+                />
+              </PopoverContent>
+            </Popover>
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => setSelectedDate(addWeeks(selectedDate, 1))}
+              disabled={addWeeks(selectedDate, 1) > new Date()}
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
 
         {/* 통계 카드 */}

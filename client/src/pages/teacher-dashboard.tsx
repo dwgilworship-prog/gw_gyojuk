@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { useAuth } from '@/hooks/use-auth';
 import { queryClient, apiRequest } from '@/lib/queryClient';
-import type { Teacher, Mokjang, Student as DbStudent, AttendanceLog, Ministry, MinistryStudent, StudentObservation } from '@shared/schema';
+import type { Teacher, Mokjang, Student as DbStudent, AttendanceLog, Ministry, MinistryStudent, StudentObservation, Report } from '@shared/schema';
 
 // 분리된 컴포넌트들 import
 import {
@@ -180,6 +180,31 @@ export default function TeacherDashboard() {
   const [localAttendance, setLocalAttendance] = useState<Record<string, string | null>>({});
   const [isSaving, setIsSaving] = useState(false);
 
+  // 목장 메모 로컬 상태
+  const [reportContent, setReportContent] = useState('');
+  const [reportPrayerRequest, setReportPrayerRequest] = useState('');
+
+  // 현재 선택된 목장 ID 가져오기
+  const selectedMokjangId = useMemo(() => {
+    if (!myMokjangs || !selectedGroup) return null;
+    const mokjang = myMokjangs.find(m => m.name === selectedGroup);
+    return mokjang?.id || null;
+  }, [myMokjangs, selectedGroup]);
+
+  // 목장 보고서 조회
+  const { data: existingReport } = useQuery<Report | null>({
+    queryKey: ["/api/reports", { mokjangId: selectedMokjangId, date: selectedDate }],
+    queryFn: async () => {
+      if (!selectedMokjangId) return null;
+      const res = await fetch(`/api/reports?mokjangId=${selectedMokjangId}`);
+      if (!res.ok) return null;
+      const reports: Report[] = await res.json();
+      // 해당 날짜의 보고서 찾기
+      return reports.find(r => r.date === selectedDate) || null;
+    },
+    enabled: !!selectedMokjangId && !!selectedDate,
+  });
+
   const isDataLoading = isStudentsLoading;
 
   // 목장 정보 로드되면 기본 선택
@@ -193,6 +218,17 @@ export default function TeacherDashboard() {
   useEffect(() => {
     setLocalAttendance({});
   }, [selectedDate, selectedGroup]);
+
+  // 기존 보고서 데이터 로드 시 로컬 상태 업데이트
+  useEffect(() => {
+    if (existingReport) {
+      setReportContent(existingReport.content || '');
+      setReportPrayerRequest(existingReport.prayerRequest || '');
+    } else {
+      setReportContent('');
+      setReportPrayerRequest('');
+    }
+  }, [existingReport, selectedDate, selectedMokjangId]);
 
   useEffect(() => {
     setTimeout(() => setIsLoaded(true), 100);
@@ -412,10 +448,19 @@ export default function TeacherDashboard() {
     return Object.keys(localAttendance).length > 0;
   }, [localAttendance]);
 
+  // 목장 메모 변경 여부 확인
+  const hasReportChanges = useMemo(() => {
+    const originalContent = existingReport?.content || '';
+    const originalPrayerRequest = existingReport?.prayerRequest || '';
+    return reportContent !== originalContent || reportPrayerRequest !== originalPrayerRequest;
+  }, [existingReport, reportContent, reportPrayerRequest]);
+
   const handleSave = useCallback(async () => {
     triggerHaptic(30);
 
-    if (!hasChanges) {
+    const hasAnyChanges = hasChanges || hasReportChanges;
+
+    if (!hasAnyChanges) {
       if (checkedCount === totalCount) {
         setShowConfetti(true);
         showToastMessage('출석 완료! 수고하셨어요!');
@@ -449,12 +494,34 @@ export default function TeacherDashboard() {
     }
 
     try {
+      // 출석 저장
       for (const item of attendanceToDelete) {
         await apiRequest('DELETE', '/api/attendance', item);
       }
 
       if (attendanceToSave.length > 0) {
         await apiRequest('POST', '/api/attendance', attendanceToSave);
+      }
+
+      // 목장 보고서 저장 (내용이 있을 때만)
+      if (hasReportChanges && selectedMokjangId && myTeacher) {
+        const reportData = {
+          mokjangId: selectedMokjangId,
+          teacherId: myTeacher.id,
+          date: selectedDate,
+          content: reportContent || null,
+          prayerRequest: reportPrayerRequest || null,
+        };
+
+        if (existingReport) {
+          // 기존 보고서 수정
+          await apiRequest('PATCH', `/api/reports/${existingReport.id}`, reportData);
+        } else if (reportContent || reportPrayerRequest) {
+          // 새 보고서 생성 (내용이 있을 때만)
+          await apiRequest('POST', '/api/reports', reportData);
+        }
+
+        await queryClient.invalidateQueries({ queryKey: ["/api/reports"] });
       }
 
       await queryClient.invalidateQueries({ queryKey: ["/api/attendance"] });
@@ -465,14 +532,14 @@ export default function TeacherDashboard() {
         showToastMessage('출석 완료! 수고하셨어요!');
         setTimeout(() => setShowConfetti(false), 3500);
       } else {
-        showToastMessage('출석이 저장되었어요');
+        showToastMessage('저장되었어요');
       }
     } catch (error) {
       showToastMessage('저장에 실패했어요. 다시 시도해주세요.');
     } finally {
       setIsSaving(false);
     }
-  }, [hasChanges, checkedCount, totalCount, localAttendance, students, triggerHaptic, showToastMessage]);
+  }, [hasChanges, hasReportChanges, checkedCount, totalCount, localAttendance, students, triggerHaptic, showToastMessage, selectedMokjangId, myTeacher, selectedDate, reportContent, reportPrayerRequest, existingReport]);
 
   const handleCopyReport = useCallback(() => {
     triggerHaptic();
@@ -569,7 +636,7 @@ export default function TeacherDashboard() {
             absentCount={absentCount}
             totalCount={totalCount}
             progress={progress}
-            hasChanges={hasChanges}
+            hasChanges={hasChanges || hasReportChanges}
             isSaving={isSaving}
             triggerHaptic={triggerHaptic}
             setCurrentView={setCurrentView}
@@ -580,6 +647,10 @@ export default function TeacherDashboard() {
             handleCopyReport={handleCopyReport}
             onOpenObservation={handleOpenObservation}
             hasObservation={hasObservation}
+            reportContent={reportContent}
+            setReportContent={setReportContent}
+            reportPrayerRequest={reportPrayerRequest}
+            setReportPrayerRequest={setReportPrayerRequest}
           />
         )}
         {currentView === 'students' && (

@@ -15,6 +15,7 @@ import LongAbsence from "@/pages/long-absence";
 import Stats from "@/pages/stats";
 import Ministries from "@/pages/ministries";
 import SmsPage from "@/pages/sms-page";
+import ReportDashboard from "@/pages/report-dashboard";
 import { AuthProvider } from "@/hooks/use-auth";
 import { ThemeProvider } from "@/hooks/use-theme";
 import { ProtectedRoute } from "@/lib/protected-route";
@@ -35,6 +36,7 @@ function Router() {
       <ProtectedRoute path="/stats" component={Stats} requiredRole="admin" />
       <ProtectedRoute path="/ministries" component={Ministries} requiredRole="admin" />
       <ProtectedRoute path="/sms" component={SmsPage} requiredRole="admin" />
+      <ProtectedRoute path="/report-dashboard" component={ReportDashboard} requiredRole="admin" />
 
       <Route path="/auth" component={AuthPage} />
       <Route component={NotFound} />

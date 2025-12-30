@@ -401,7 +401,6 @@ export const styles: Record<string, React.CSSProperties> = {
   // 학생 카드 (출석)
   studentList: {
     padding: '0 20px',
-    paddingBottom: 100,
   },
   studentCard: {
     display: 'flex',

@@ -702,6 +702,147 @@ export async function registerRoutes(
     }
   });
 
+  // 목장 보고서 관리자 대시보드 API
+  app.get("/api/report-dashboard", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const user = req.user!;
+    if (user.role !== "admin") return res.sendStatus(403);
+
+    const { date, mokjangId } = req.query;
+
+    if (!date || typeof date !== "string") {
+      return res.status(400).json({ message: "date 파라미터가 필요합니다." });
+    }
+
+    try {
+      // 1. 목장 목록
+      const allMokjangs = await storage.getMokjangs();
+      const filteredMokjangs = mokjangId && typeof mokjangId === "string"
+        ? allMokjangs.filter(m => m.id === mokjangId)
+        : allMokjangs;
+
+      // 2. 목장-교사 매핑
+      const mokjangTeacherAssignments = await storage.getAllMokjangTeachers();
+      const allTeachers = await storage.getTeachers();
+
+      // 3. 해당 날짜 보고서
+      const reportsOnDate = await storage.getReportsByDate(date);
+
+      // 4. 전체 학생
+      const allStudents = await storage.getStudents();
+      const activeStudents = allStudents.filter(s => s.status === 'ACTIVE');
+
+      // 5. 해당 날짜 출석 로그
+      const attendanceLogs = await storage.getAttendanceByDate(date);
+
+      // 6. 해당 날짜 특이사항
+      const observations = await storage.getObservationsByDate(date);
+
+      // 목장별 데이터 조합
+      const mokjangData = filteredMokjangs.map(mokjang => {
+        // 담당 교사
+        const teacherIds = mokjangTeacherAssignments
+          .filter(mt => mt.mokjangId === mokjang.id)
+          .map(mt => mt.teacherId);
+        const teachers = allTeachers.filter(t => teacherIds.includes(t.id));
+
+        // 목장 소속 학생
+        const mokjangStudents = activeStudents.filter(s => s.mokjangId === mokjang.id);
+        const studentIds = mokjangStudents.map(s => s.id);
+
+        // 출석 현황
+        const mokjangAttendance = attendanceLogs.filter(log => studentIds.includes(log.studentId));
+        const attendedCount = mokjangAttendance.filter(l => l.status === 'ATTENDED' || l.status === 'LATE').length;
+
+        // 보고서
+        const report = reportsOnDate.find(r => r.mokjangId === mokjang.id);
+
+        // 특이사항 (첫 번째 것만 요약용)
+        const mokjangObservations = observations.filter(o => studentIds.includes(o.studentId));
+        const firstObservation = mokjangObservations.length > 0 ? mokjangObservations[0].content : null;
+
+        return {
+          mokjang: {
+            id: mokjang.id,
+            name: mokjang.name,
+            targetGrade: mokjang.targetGrade,
+          },
+          teachers: teachers.map(t => ({ id: t.id, name: t.name })),
+          attendance: {
+            total: mokjangStudents.length,
+            attended: attendedCount,
+          },
+          report: report || null,
+          observationSummary: firstObservation,
+          hasReport: !!report,
+        };
+      });
+
+      res.json({ mokjangs: mokjangData, date });
+    } catch (error) {
+      console.error("보고서 대시보드 조회 오류:", error);
+      res.status(500).json({ message: "조회 중 오류가 발생했습니다." });
+    }
+  });
+
+  // 목장 상세 (출석 + 특이사항)
+  app.get("/api/report-dashboard/:mokjangId/details", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const user = req.user!;
+    if (user.role !== "admin") return res.sendStatus(403);
+
+    const { mokjangId } = req.params;
+    const { date } = req.query;
+
+    if (!date || typeof date !== "string") {
+      return res.status(400).json({ message: "date 파라미터가 필요합니다." });
+    }
+
+    try {
+      // 목장 정보
+      const mokjang = await storage.getMokjang(mokjangId);
+      if (!mokjang) return res.sendStatus(404);
+
+      // 보고서
+      const report = await storage.getReportByMokjangAndDate(mokjangId, date);
+
+      // 목장 소속 학생
+      const allStudents = await storage.getStudentsByMokjangId(mokjangId);
+      const activeStudents = allStudents.filter(s => s.status === 'ACTIVE');
+
+      // 해당 날짜 출석 로그
+      const attendanceLogs = await storage.getAttendanceByDateAndMokjang(date, mokjangId);
+
+      // 해당 날짜 특이사항
+      const observations = await storage.getObservationsByDate(date);
+
+      // 학생별 출석 및 특이사항
+      const studentDetails = activeStudents.map(student => {
+        const attendance = attendanceLogs.find(l => l.studentId === student.id);
+        const studentObservations = observations.filter(o => o.studentId === student.id);
+
+        return {
+          id: student.id,
+          name: student.name,
+          grade: student.grade,
+          status: attendance?.status || null,
+          memo: attendance?.memo || null,
+          observations: studentObservations.map(o => o.content),
+        };
+      });
+
+      res.json({
+        mokjang: { id: mokjang.id, name: mokjang.name, targetGrade: mokjang.targetGrade },
+        report: report || null,
+        students: studentDetails,
+        date,
+      });
+    } catch (error) {
+      console.error("목장 상세 조회 오류:", error);
+      res.status(500).json({ message: "조회 중 오류가 발생했습니다." });
+    }
+  });
+
   // Student Observations Routes
   // POST /api/observations - 새로운 특이사항 기록 생성
   app.post("/api/observations", async (req, res) => {

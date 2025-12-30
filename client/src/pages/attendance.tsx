@@ -43,8 +43,8 @@ import {
   TabsList,
   TabsTrigger,
 } from "@/components/ui/tabs";
-import { UserCheck, CalendarIcon, Check, Clock, X, AlertCircle, Save, Users, FileText, Trash2 } from "lucide-react";
-import { format } from "date-fns";
+import { UserCheck, CalendarIcon, Check, Clock, X, AlertCircle, Save, Users, FileText, Trash2, ChevronLeft, ChevronRight } from "lucide-react";
+import { format, addWeeks, subWeeks } from "date-fns";
 import { ko } from "date-fns/locale";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
@@ -315,34 +315,46 @@ export default function Attendance() {
         <Card>
           <CardHeader className="pb-3">
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-              <Popover open={isCalendarOpen} onOpenChange={setIsCalendarOpen}>
-                <PopoverTrigger asChild>
-                  <Button variant="outline" className="justify-start" data-testid="button-change-date">
-                    <CalendarIcon className="h-4 w-4 mr-2" />
-                    {format(selectedDate, "yyyy년 M월 d일 (EEEE)", { locale: ko })}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    mode="single"
-                    selected={selectedDate}
-                    onSelect={(date) => {
-                      if (date) {
-                        setSelectedDate(date);
-                        setIsCalendarOpen(false);
-                      }
-                    }}
-                    disabled={(date) => {
-                      const today = new Date();
-                      today.setHours(23, 59, 59, 999);
-                      // 일요일이 아니거나 미래 날짜면 비활성화
-                      return date.getDay() !== 0 || date > today;
-                    }}
-                    initialFocus
-                  />
-                </PopoverContent>
-              </Popover>
-              
+              <div className="flex items-center gap-2">
+                <Button variant="outline" size="icon" onClick={() => setSelectedDate(subWeeks(selectedDate, 1))}>
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <Popover open={isCalendarOpen} onOpenChange={setIsCalendarOpen}>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" className="gap-2" data-testid="button-change-date">
+                      <CalendarIcon className="h-4 w-4" />
+                      {format(selectedDate, "yyyy년 M월 d일 (EEEE)", { locale: ko })}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={selectedDate}
+                      onSelect={(date) => {
+                        if (date) {
+                          setSelectedDate(date);
+                          setIsCalendarOpen(false);
+                        }
+                      }}
+                      disabled={(date) => {
+                        const today = new Date();
+                        today.setHours(23, 59, 59, 999);
+                        return date.getDay() !== 0 || date > today;
+                      }}
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={() => setSelectedDate(addWeeks(selectedDate, 1))}
+                  disabled={addWeeks(selectedDate, 1) > new Date()}
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
+
               <Select value={selectedMokjangId} onValueChange={setSelectedMokjangId}>
                 <SelectTrigger className="w-full sm:w-48" data-testid="select-mokjang">
                   <SelectValue placeholder="목장 선택" />
