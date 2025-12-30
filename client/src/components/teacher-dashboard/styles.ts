@@ -1328,6 +1328,51 @@ export const globalStyles = `
       display: flex !important;
       flex-direction: column !important;
     }
+
+    /* 모바일 웹에서도 캘린더 모달 - 뷰포트 기준 중앙 배치 */
+    .calendar-modal-overlay {
+      position: fixed !important;
+      top: 0 !important;
+      left: 0 !important;
+      right: 0 !important;
+      bottom: 0 !important;
+      z-index: 100000 !important;
+    }
+
+    /* 모바일 웹에서도 바텀시트 오버레이 - fixed로 전체 화면 덮기 */
+    .bottom-sheet-overlay {
+      position: fixed !important;
+      top: 0 !important;
+      left: 0 !important;
+      right: 0 !important;
+      bottom: 0 !important;
+      z-index: 10000 !important;
+    }
+
+    /* 하단 네비게이션 바 */
+    .nav-bar {
+      position: fixed !important;
+      bottom: 0 !important;
+      left: 0 !important;
+      right: 0 !important;
+      z-index: 9999 !important;
+    }
+
+    /* 저장 버튼 플로팅 - nav 바로 위에 고정 */
+    .save-btn-fixed {
+      position: fixed !important;
+      bottom: 92px !important;
+      left: 20px !important;
+      right: 20px !important;
+      z-index: 9998 !important;
+    }
+
+    /* 토스트 메시지 */
+    .toast-message {
+      position: fixed !important;
+      bottom: 160px !important;
+      z-index: 99999 !important;
+    }
   }
 
   /* iOS PWA Safe Area - 헤더에 노치 영역 padding 적용 */
