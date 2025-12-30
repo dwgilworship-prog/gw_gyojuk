@@ -1332,26 +1332,48 @@ export const globalStyles = `
 
   /* iOS PWA Safe Area - 헤더에 노치 영역 padding 적용 */
   @media all and (display-mode: standalone) {
-    /* 홈 헤더 - 배경색이 노치까지 확장 */
+    /* 홈 헤더 - 배경색이 노치까지 확장 + 상단 고정 */
     .home-header {
+      position: sticky !important;
+      top: 0 !important;
+      z-index: 100 !important;
       padding-top: calc(32px + env(safe-area-inset-top, 0px)) !important;
-      background: #FFFFFF !important;
+      background: rgba(255, 255, 255, 0.95) !important;
+      backdrop-filter: blur(12px) !important;
+      -webkit-backdrop-filter: blur(12px) !important;
     }
 
-    /* 출석 헤더 */
+    /* 출석 헤더 - 상단 고정 */
     .att-header {
+      position: sticky !important;
+      top: 0 !important;
+      z-index: 100 !important;
       padding-top: calc(24px + env(safe-area-inset-top, 0px)) !important;
-      background: #FFFFFF !important;
+      background: rgba(255, 255, 255, 0.95) !important;
+      backdrop-filter: blur(12px) !important;
+      -webkit-backdrop-filter: blur(12px) !important;
     }
 
-    /* 학생목록 헤더 */
+    /* 학생목록 헤더 - 상단 고정 */
     .student-list-header {
+      position: sticky !important;
+      top: 0 !important;
+      z-index: 100 !important;
       padding-top: calc(32px + env(safe-area-inset-top, 0px)) !important;
+      background: rgba(255, 255, 255, 0.95) !important;
+      backdrop-filter: blur(12px) !important;
+      -webkit-backdrop-filter: blur(12px) !important;
     }
 
-    /* 설정 헤더 */
+    /* 설정 헤더 - 상단 고정 */
     .settings-header {
+      position: sticky !important;
+      top: 0 !important;
+      z-index: 100 !important;
       padding-top: calc(32px + env(safe-area-inset-top, 0px)) !important;
+      background: rgba(255, 255, 255, 0.95) !important;
+      backdrop-filter: blur(12px) !important;
+      -webkit-backdrop-filter: blur(12px) !important;
     }
 
     /* 하단 네비게이션 바 - fixed로 변경하여 브라우저 UI 위에 표시 */

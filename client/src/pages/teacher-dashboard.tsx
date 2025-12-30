@@ -597,6 +597,18 @@ export default function TeacherDashboard() {
   return (
     <div style={styles.wrapper} className="teacher-dashboard-wrapper">
       <style>{globalStyles}</style>
+
+      {/* 상단 노치 영역 고정 커버 (iOS Safe Area) */}
+      <div className="status-bar-cover" style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        height: 'env(safe-area-inset-top, 0px)',
+        background: '#FFFFFF',
+        zIndex: 9998,
+      }} />
+
       <div style={styles.device} className="teacher-dashboard-device">
         {currentView === 'home' && (
           <HomeView
