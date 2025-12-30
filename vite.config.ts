@@ -7,7 +7,7 @@ export default defineConfig({
   plugins: [
     react(),
     VitePWA({
-      registerType: "prompt",
+      registerType: "autoUpdate",
       includeAssets: ["favicon_gw_final.png", "apple-touch-icon.png"],
       manifest: {
         name: "GIL Worship - 청소년부 사역 관리",

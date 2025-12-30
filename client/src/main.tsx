@@ -5,13 +5,23 @@ import "./index.css";
 
 // Service Worker 등록 및 업데이트 알림
 const updateSW = registerSW({
-  onNeedRefresh() {
-    if (confirm("새 버전이 있습니다. 업데이트하시겠습니까?")) {
-      updateSW(true);
-    }
-  },
   onOfflineReady() {
     console.log("앱이 오프라인에서 사용 가능합니다.");
+  },
+  onRegisteredSW(swUrl, registration) {
+    if (registration) {
+      // 앱 다시 열 때마다 업데이트 체크
+      document.addEventListener("visibilitychange", () => {
+        if (document.visibilityState === "visible") {
+          registration.update();
+        }
+      });
+
+      // 1시간마다 백그라운드 체크
+      setInterval(() => {
+        registration.update();
+      }, 60 * 60 * 1000);
+    }
   },
 });
 
