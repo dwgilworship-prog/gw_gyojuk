@@ -248,10 +248,9 @@ export const AttendanceView = ({
     {/* 목장 메모 입력 영역 */}
     {setReportContent && (
       <div style={{
-        margin: '16px 20px 0',
+        margin: '16px 20px 100px',
         padding: '16px',
-        paddingBottom: 100,
-        background: '#fff',
+        background: '#f8f5ff',
         borderRadius: 16,
         boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
       }}>
@@ -261,14 +260,7 @@ export const AttendanceView = ({
           gap: 8,
           marginBottom: 12,
         }}>
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-            <polyline points="14 2 14 8 20 8" />
-            <line x1="16" y1="13" x2="8" y2="13" />
-            <line x1="16" y1="17" x2="8" y2="17" />
-            <polyline points="10 9 9 9 8 9" />
-          </svg>
-          <span style={{ fontSize: 14, fontWeight: 600, color: '#191F28' }}>목장 메모</span>
+          <span style={{ fontSize: 18, fontWeight: 700, color: '#191F28' }}>📝 이번주 목장 특이사항</span>
         </div>
         <textarea
           value={reportContent || ''}
