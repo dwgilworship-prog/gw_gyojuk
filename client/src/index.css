@@ -66,25 +66,12 @@
   --spacing: 0.25rem;
 
   --sidebar-primary-border: hsl(var(--sidebar-primary));
-  --sidebar-primary-border: hsl(from hsl(var(--sidebar-primary)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
-
   --sidebar-accent-border: hsl(var(--sidebar-accent));
-  --sidebar-accent-border: hsl(from hsl(var(--sidebar-accent)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
-
   --primary-border: hsl(var(--primary));
-  --primary-border: hsl(from hsl(var(--primary)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
-
   --secondary-border: hsl(var(--secondary));
-  --secondary-border: hsl(from hsl(var(--secondary)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
-
   --muted-border: hsl(var(--muted));
-  --muted-border: hsl(from hsl(var(--muted)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
-
   --accent-border: hsl(var(--accent));
-  --accent-border: hsl(from hsl(var(--accent)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
-
   --destructive-border: hsl(var(--destructive));
-  --destructive-border: hsl(from hsl(var(--destructive)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
 }
 
 /* DARK MODE - Ethereal Glass Design System (Slate 950 base) */
@@ -144,25 +131,12 @@
   --shadow-2xl: 0px 25px 50px -12px hsl(0 0% 0% / 0.5);
 
   --sidebar-primary-border: hsl(var(--sidebar-primary));
-  --sidebar-primary-border: hsl(from hsl(var(--sidebar-primary)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
-
   --sidebar-accent-border: hsl(var(--sidebar-accent));
-  --sidebar-accent-border: hsl(from hsl(var(--sidebar-accent)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
-
   --primary-border: hsl(var(--primary));
-  --primary-border: hsl(from hsl(var(--primary)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
-
   --secondary-border: hsl(var(--secondary));
-  --secondary-border: hsl(from hsl(var(--secondary)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
-
   --muted-border: hsl(var(--muted));
-  --muted-border: hsl(from hsl(var(--muted)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
-
   --accent-border: hsl(var(--accent));
-  --accent-border: hsl(from hsl(var(--accent)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
-
   --destructive-border: hsl(var(--destructive));
-  --destructive-border: hsl(from hsl(var(--destructive)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
 }
 
 @layer base {
@@ -172,6 +146,7 @@
 
   html {
     height: 100%;
+    background-color: hsl(var(--background));
   }
 
   body {
@@ -190,6 +165,7 @@
       position: fixed;
       /* iOS 고무줄 효과 방지용 강력 고정 */
       width: 100%;
+      background-color: hsl(var(--background));
     }
 
     /* 실제 스크롤은 root 안에서만 발생 */
@@ -202,6 +178,7 @@
       overscroll-behavior: none;
       padding-left: env(safe-area-inset-left);
       padding-right: env(safe-area-inset-right);
+      padding-bottom: env(safe-area-inset-bottom);
       background-color: hsl(var(--background));
     }
 
@@ -296,7 +273,7 @@
     content: "";
     pointer-events: none;
     position: absolute;
-    inset: 0px;
+    inset: 0;
     /*border-radius: inherit;   match rounded corners */
     border-radius: inherit;
     z-index: -1;
@@ -328,7 +305,7 @@
     content: "";
     pointer-events: none;
     position: absolute;
-    inset: 0px;
+    inset: 0;
     /*border-radius: inherit;   match rounded corners */
     border-radius: inherit;
     z-index: 999;

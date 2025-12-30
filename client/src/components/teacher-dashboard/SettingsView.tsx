@@ -23,7 +23,6 @@ export const SettingsView = ({
   streakStudents,
   warningStudents,
   calculateMonthlyAttendance,
-  triggerHaptic,
   handleLogout,
   isLogoutPending,
 }: SettingsViewProps) => (
@@ -118,7 +117,7 @@ export const SettingsView = ({
       >
         {isLogoutPending ? '로그아웃 중...' : '로그아웃'}
       </button>
-      <p style={styles.versionText}>버전 1.0.2</p>
+      <p style={styles.versionText}>버전 1.0.3</p>
     </section>
   </div>
 );
