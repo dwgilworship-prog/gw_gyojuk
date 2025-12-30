@@ -172,6 +172,35 @@
   body {
     @apply font-sans antialiased bg-background text-foreground;
   }
+
+  /* iOS PWA Safe Area 지원 */
+  @media all and (display-mode: standalone) {
+    body {
+      padding-top: env(safe-area-inset-top);
+      padding-bottom: env(safe-area-inset-bottom);
+      padding-left: env(safe-area-inset-left);
+      padding-right: env(safe-area-inset-right);
+    }
+  }
+
+  /* iOS PWA input 텍스트 색상 문제 해결 */
+  @supports (-webkit-touch-callout: none) {
+    @media all and (display-mode: standalone) {
+      input,
+      textarea,
+      select {
+        color: inherit !important;
+        -webkit-text-fill-color: currentColor !important;
+      }
+
+      input::placeholder,
+      textarea::placeholder {
+        color: hsl(var(--muted-foreground)) !important;
+        -webkit-text-fill-color: hsl(var(--muted-foreground)) !important;
+        opacity: 1;
+      }
+    }
+  }
 }
 
 /**
