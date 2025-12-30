@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { DashboardLayout } from "@/components/dashboard-layout";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -40,7 +40,13 @@ import {
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Plus, BookOpen, Search, Pencil, Trash2, Users, UserPlus, X, Phone, GraduationCap, User } from "lucide-react";
+import { Plus, BookOpen, Search, Pencil, Trash2, Users, UserPlus, X, Phone, GraduationCap, User, MoreVertical } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -330,36 +336,41 @@ export default function Mokjangs() {
                         )}
                       </div>
                     </div>
-                    <div className="flex items-center gap-1 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
-                      {user?.role === "admin" && (
-                        <>
-                          <Button
-                            size="icon"
-                            variant="ghost"
-                            onClick={() => setAssigningMokjang(mokjang)}
-                            data-testid={`button-assign-teacher-${mokjang.id}`}
-                          >
-                            <UserPlus className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            size="icon"
-                            variant="ghost"
-                            onClick={() => handleOpenEdit(mokjang)}
-                            data-testid={`button-edit-mokjang-${mokjang.id}`}
-                          >
-                            <Pencil className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            size="icon"
-                            variant="ghost"
-                            onClick={() => setDeletingMokjang(mokjang)}
-                            data-testid={`button-delete-mokjang-${mokjang.id}`}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </>
-                      )}
-                    </div>
+                    {user?.role === "admin" && (
+                      <div className="flex flex-col gap-1 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button size="icon" variant="ghost" className="h-8 w-8">
+                              <MoreVertical className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem
+                              onClick={() => setAssigningMokjang(mokjang)}
+                              data-testid={`button-assign-teacher-${mokjang.id}`}
+                            >
+                              <UserPlus className="h-4 w-4 mr-2" />
+                              교사 배정
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() => handleOpenEdit(mokjang)}
+                              data-testid={`button-edit-mokjang-${mokjang.id}`}
+                            >
+                              <Pencil className="h-4 w-4 mr-2" />
+                              수정
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() => setDeletingMokjang(mokjang)}
+                              className="text-destructive"
+                              data-testid={`button-delete-mokjang-${mokjang.id}`}
+                            >
+                              <Trash2 className="h-4 w-4 mr-2" />
+                              삭제
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
+                    )}
                   </div>
                 </CardContent>
               </Card>
