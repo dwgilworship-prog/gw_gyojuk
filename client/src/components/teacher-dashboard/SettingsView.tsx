@@ -118,7 +118,7 @@ export const SettingsView = ({
       >
         {isLogoutPending ? '로그아웃 중...' : '로그아웃'}
       </button>
-      <p style={styles.versionText}>버전 1.0.1</p>
+      <p style={styles.versionText}>버전 1.0.2</p>
     </section>
   </div>
 );
