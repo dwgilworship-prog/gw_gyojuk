@@ -277,6 +277,9 @@ export const AttendanceView = ({
             outline: 'none',
             transition: 'border-color 0.2s',
             fontFamily: 'inherit',
+            background: '#FFFFFF',
+            color: '#191F28',
+            WebkitTextFillColor: '#191F28',
           }}
           onFocus={(e) => e.target.style.borderColor = '#7c3aed'}
           onBlur={(e) => e.target.style.borderColor = '#E5E8EB'}
