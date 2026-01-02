@@ -222,11 +222,17 @@ export default function Dashboard() {
                         const birth = item.birth || item.student?.birth;
                         const info = item.info || (item.student ? (item.student.grade ? `(${item.student.grade})` : "") : "");
 
+                        // 생년월일에서 월/일만 추출해 올해 날짜로 변환 (요일 정확히 표시)
+                        const getThisYearBirthday = (birthStr: string) => {
+                          const birthDate = new Date(birthStr);
+                          return new Date(new Date().getFullYear(), birthDate.getMonth(), birthDate.getDate());
+                        };
+
                         return (
                           <div key={item.id || item.student?.id} className="text-sm flex items-center gap-2">
                             <span className="text-muted-foreground">-</span>
                             <span className="text-pink-500 font-medium">
-                              {birth ? format(new Date(birth), "M/d (E)", { locale: ko }) : ""}
+                              {birth ? format(getThisYearBirthday(birth), "M/d (E)", { locale: ko }) : ""}
                             </span>
                             <span>{name}</span>
                             {info && <span className="text-muted-foreground">({info})</span>}
