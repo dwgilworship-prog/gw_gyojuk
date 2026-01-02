@@ -1,6 +1,6 @@
 import {
   users, teachers, mokjangs, mokjangTeachers, students, attendanceLogs, reports, longAbsenceContacts,
-  studentObservations,
+  studentObservations, loginLogs, dataChangeLogs,
   type User, type InsertUser,
   type Teacher, type InsertTeacher,
   type Mokjang, type InsertMokjang,
@@ -10,6 +10,7 @@ import {
   type Report, type InsertReport,
   type LongAbsenceContact, type InsertLongAbsenceContact,
   type StudentObservation, type InsertStudentObservation,
+  type LoginLog, type DataChangeLog,
   ministries, ministryTeachers, ministryStudents,
   type Ministry, type InsertMinistry,
   type MinistryTeacher, type InsertMinistryTeacher,
@@ -599,6 +600,67 @@ export class DatabaseStorage implements IStorage {
   async deleteObservation(id: string): Promise<boolean> {
     const result = await db.delete(studentObservations).where(eq(studentObservations.id, id));
     return (result.rowCount ?? 0) > 0;
+  }
+
+  // 로그 조회 메서드 (히든 관리자 메뉴용)
+  async getLoginLogs(limit: number, offset: number): Promise<(LoginLog & { userEmail?: string; userName?: string })[]> {
+    const result = await db
+      .select({
+        log: loginLogs,
+        userEmail: users.email,
+        userName: teachers.name,
+      })
+      .from(loginLogs)
+      .leftJoin(users, eq(loginLogs.userId, users.id))
+      .leftJoin(teachers, eq(users.id, teachers.userId))
+      .orderBy(desc(loginLogs.createdAt))
+      .limit(limit)
+      .offset(offset);
+
+    return result.map(r => ({
+      ...r.log,
+      userEmail: r.userEmail ?? undefined,
+      userName: r.userName ?? undefined,
+    }));
+  }
+
+  async getLoginLogsCount(): Promise<number> {
+    const [result] = await db.select({ count: count() }).from(loginLogs);
+    return result.count;
+  }
+
+  async getDataChangeLogs(limit: number, offset: number, targetType?: string): Promise<(DataChangeLog & { userEmail?: string })[]> {
+    let query = db
+      .select({
+        log: dataChangeLogs,
+        userEmail: users.email,
+      })
+      .from(dataChangeLogs)
+      .leftJoin(users, eq(dataChangeLogs.userId, users.id))
+      .orderBy(desc(dataChangeLogs.createdAt))
+      .limit(limit)
+      .offset(offset);
+
+    if (targetType) {
+      query = query.where(eq(dataChangeLogs.targetType, targetType as any)) as any;
+    }
+
+    const result = await query;
+
+    return result.map(r => ({
+      ...r.log,
+      userEmail: r.userEmail ?? undefined,
+    }));
+  }
+
+  async getDataChangeLogsCount(targetType?: string): Promise<number> {
+    if (targetType) {
+      const [result] = await db.select({ count: count() }).from(dataChangeLogs)
+        .where(eq(dataChangeLogs.targetType, targetType as any));
+      return result.count;
+    }
+    const [result] = await db.select({ count: count() }).from(dataChangeLogs);
+    return result.count;
   }
 }
 
