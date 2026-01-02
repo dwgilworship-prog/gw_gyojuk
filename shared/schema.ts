@@ -14,6 +14,11 @@ export const baptismEnum = pgEnum("baptism", ["infant", "baptized", "confirmed",
 export const teacherStatusEnum = pgEnum("teacher_status", ["pending", "active", "rest", "resigned"]);
 export const ministryRoleEnum = pgEnum("ministry_role", ["admin", "member", "leader"]);
 
+// 로그 관련 ENUM
+export const loginActionEnum = pgEnum("login_action", ["login", "logout", "login_failed"]);
+export const dataChangeActionEnum = pgEnum("data_change_action", ["create", "update", "delete"]);
+export const dataTargetTypeEnum = pgEnum("data_target_type", ["student", "teacher"]);
+
 export const users = pgTable("users", {
   id: varchar("id", { length: 36 }).primaryKey().default(sql`gen_random_uuid()`),
   email: text("email").notNull().unique(),
@@ -270,6 +275,42 @@ export const studentObservationsRelations = relations(studentObservations, ({ on
   }),
 }));
 
+// 로그인 로그 테이블
+export const loginLogs = pgTable("login_logs", {
+  id: varchar("id", { length: 36 }).primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id", { length: 36 }).notNull().references(() => users.id),
+  action: loginActionEnum("action").notNull(),
+  ipAddress: text("ip_address"),
+  userAgent: text("user_agent"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const loginLogsRelations = relations(loginLogs, ({ one }) => ({
+  user: one(users, {
+    fields: [loginLogs.userId],
+    references: [users.id],
+  }),
+}));
+
+// 데이터 변경 로그 테이블
+export const dataChangeLogs = pgTable("data_change_logs", {
+  id: varchar("id", { length: 36 }).primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id", { length: 36 }).notNull().references(() => users.id),
+  action: dataChangeActionEnum("action").notNull(),
+  targetType: dataTargetTypeEnum("target_type").notNull(),
+  targetId: varchar("target_id", { length: 36 }).notNull(),
+  targetName: text("target_name"),
+  changes: jsonb("changes"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const dataChangeLogsRelations = relations(dataChangeLogs, ({ one }) => ({
+  user: one(users, {
+    fields: [dataChangeLogs.userId],
+    references: [users.id],
+  }),
+}));
+
 export const insertUserSchema = createInsertSchema(users).omit({
   id: true,
   createdAt: true,
@@ -342,6 +383,16 @@ export const insertStudentObservationSchema = createInsertSchema(studentObservat
   updatedAt: true,
 });
 
+export const insertLoginLogSchema = createInsertSchema(loginLogs).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertDataChangeLogSchema = createInsertSchema(dataChangeLogs).omit({
+  id: true,
+  createdAt: true,
+});
+
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
 export type InsertTeacher = z.infer<typeof insertTeacherSchema>;
@@ -368,3 +419,7 @@ export type InsertLongAbsenceContact = z.infer<typeof insertLongAbsenceContactSc
 export type LongAbsenceContact = typeof longAbsenceContacts.$inferSelect;
 export type InsertStudentObservation = z.infer<typeof insertStudentObservationSchema>;
 export type StudentObservation = typeof studentObservations.$inferSelect;
+export type InsertLoginLog = z.infer<typeof insertLoginLogSchema>;
+export type LoginLog = typeof loginLogs.$inferSelect;
+export type InsertDataChangeLog = z.infer<typeof insertDataChangeLogSchema>;
+export type DataChangeLog = typeof dataChangeLogs.$inferSelect;

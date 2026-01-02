@@ -3,6 +3,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth, hashPassword } from "./auth";
 import { sendSms, sendSmsMass, getSmsHistory, getSmsDetail, getSmsRemain, cancelSms } from "./sms";
+import { logDataChange, compareChanges } from "./utils/logger";
 
 export async function registerRoutes(
   httpServer: Server,
@@ -79,6 +80,16 @@ export async function registerRoutes(
       startedAt: startedAt || null,
     });
 
+    // 교사 생성 로그
+    await logDataChange({
+      userId: user.id,
+      action: "create",
+      targetType: "teacher",
+      targetId: teacher.id,
+      targetName: teacher.name,
+      changes: { created: { email, name, phone, birth, startedAt } },
+    });
+
     res.status(201).json(teacher);
   });
 
@@ -86,8 +97,27 @@ export async function registerRoutes(
     if (!req.isAuthenticated()) return res.sendStatus(401);
     const user = req.user!;
     if (user.role !== "admin") return res.sendStatus(403);
+
+    // 변경 전 데이터 조회
+    const oldTeacher = await storage.getTeacher(req.params.id);
+    if (!oldTeacher) return res.sendStatus(404);
+
     const teacher = await storage.updateTeacher(req.params.id, req.body);
     if (!teacher) return res.sendStatus(404);
+
+    // 교사 수정 로그
+    const changes = compareChanges(oldTeacher, req.body);
+    if (Object.keys(changes).length > 0) {
+      await logDataChange({
+        userId: user.id,
+        action: "update",
+        targetType: "teacher",
+        targetId: teacher.id,
+        targetName: teacher.name,
+        changes,
+      });
+    }
+
     res.json(teacher);
   });
 
@@ -95,8 +125,24 @@ export async function registerRoutes(
     if (!req.isAuthenticated()) return res.sendStatus(401);
     const user = req.user!;
     if (user.role !== "admin") return res.sendStatus(403);
+
+    // 삭제 전 데이터 조회
+    const teacher = await storage.getTeacher(req.params.id);
+    if (!teacher) return res.sendStatus(404);
+
     const deleted = await storage.deleteTeacher(req.params.id);
     if (!deleted) return res.sendStatus(404);
+
+    // 교사 삭제 로그
+    await logDataChange({
+      userId: user.id,
+      action: "delete",
+      targetType: "teacher",
+      targetId: req.params.id,
+      targetName: teacher.name,
+      changes: { deleted: teacher },
+    });
+
     res.sendStatus(200);
   });
 
@@ -193,13 +239,43 @@ export async function registerRoutes(
   app.post("/api/students", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     const student = await storage.createStudent(req.body);
+
+    // 학생 생성 로그
+    await logDataChange({
+      userId: req.user!.id,
+      action: "create",
+      targetType: "student",
+      targetId: student.id,
+      targetName: student.name,
+      changes: { created: req.body },
+    });
+
     res.status(201).json(student);
   });
 
   app.patch("/api/students/:id", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
+
+    // 변경 전 데이터 조회
+    const oldStudent = await storage.getStudent(req.params.id);
+    if (!oldStudent) return res.sendStatus(404);
+
     const student = await storage.updateStudent(req.params.id, req.body);
     if (!student) return res.sendStatus(404);
+
+    // 학생 수정 로그
+    const changes = compareChanges(oldStudent, req.body);
+    if (Object.keys(changes).length > 0) {
+      await logDataChange({
+        userId: req.user!.id,
+        action: "update",
+        targetType: "student",
+        targetId: student.id,
+        targetName: student.name,
+        changes,
+      });
+    }
+
     res.json(student);
   });
 
@@ -207,8 +283,24 @@ export async function registerRoutes(
     if (!req.isAuthenticated()) return res.sendStatus(401);
     const user = req.user!;
     if (user.role !== "admin") return res.sendStatus(403);
+
+    // 삭제 전 데이터 조회
+    const student = await storage.getStudent(req.params.id);
+    if (!student) return res.sendStatus(404);
+
     const deleted = await storage.deleteStudent(req.params.id);
     if (!deleted) return res.sendStatus(404);
+
+    // 학생 삭제 로그
+    await logDataChange({
+      userId: user.id,
+      action: "delete",
+      targetType: "student",
+      targetId: req.params.id,
+      targetName: student.name,
+      changes: { deleted: student },
+    });
+
     res.sendStatus(200);
   });
 

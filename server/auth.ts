@@ -6,6 +6,7 @@ import { scrypt, randomBytes, timingSafeEqual } from "crypto";
 import { promisify } from "util";
 import { storage } from "./storage";
 import { User as SelectUser } from "@shared/schema";
+import { logLogin, getClientIp } from "./utils/logger";
 
 declare global {
   namespace Express {
@@ -105,13 +106,35 @@ export function setupAuth(app: Express) {
   });
 
   app.post("/api/login", (req, res, next) => {
+    const ipAddress = getClientIp(req);
+    const userAgent = req.headers["user-agent"];
+
     passport.authenticate("local", async (err: any, user: SelectUser | false) => {
       if (err) return next(err);
       if (!user) {
+        // 로그인 실패 로그 - 이메일로 사용자 조회하여 userId 가져오기
+        const failedUser = await storage.getUserByEmail(req.body.email);
+        if (failedUser) {
+          await logLogin({
+            userId: failedUser.id,
+            action: "login_failed",
+            ipAddress,
+            userAgent,
+          });
+        }
         return res.status(401).send("이메일 또는 비밀번호가 올바르지 않습니다");
       }
       req.login(user, async (err) => {
         if (err) return next(err);
+
+        // 로그인 성공 로그
+        await logLogin({
+          userId: user.id,
+          action: "login",
+          ipAddress,
+          userAgent,
+        });
+
         const { password, ...safeUser } = user;
 
         // teacher 정보도 함께 반환
@@ -125,7 +148,21 @@ export function setupAuth(app: Express) {
     })(req, res, next);
   });
 
-  app.post("/api/logout", (req, res, next) => {
+  app.post("/api/logout", async (req, res, next) => {
+    const userId = req.user?.id;
+    const ipAddress = getClientIp(req);
+    const userAgent = req.headers["user-agent"];
+
+    // 로그아웃 로그 (사용자가 로그인 상태인 경우에만)
+    if (userId) {
+      await logLogin({
+        userId,
+        action: "logout",
+        ipAddress,
+        userAgent,
+      });
+    }
+
     req.logout((err) => {
       if (err) return next(err);
       res.sendStatus(200);

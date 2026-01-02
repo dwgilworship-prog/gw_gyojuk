@@ -7,3 +7,4 @@ vite.config.ts.*
 .env
 .vscode/settings.json
 TEACHER_DASHBOARD_TODO.md
+migrations
