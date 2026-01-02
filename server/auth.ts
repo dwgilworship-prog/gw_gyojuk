@@ -7,6 +7,7 @@ import { promisify } from "util";
 import { storage } from "./storage";
 import { User as SelectUser } from "@shared/schema";
 import { logLogin, getClientIp } from "./utils/logger";
+import { loginRateLimiter, registerRateLimiter, passwordChangeRateLimiter } from "./middleware/rate-limit.middleware";
 
 declare global {
   namespace Express {
@@ -66,7 +67,7 @@ export function setupAuth(app: Express) {
     done(null, user);
   });
 
-  app.post("/api/register", async (req, res, next) => {
+  app.post("/api/register", registerRateLimiter, async (req, res, next) => {
     try {
       const { email, password, name, phone } = req.body;
 
@@ -105,7 +106,7 @@ export function setupAuth(app: Express) {
     }
   });
 
-  app.post("/api/login", (req, res, next) => {
+  app.post("/api/login", loginRateLimiter, (req, res, next) => {
     const ipAddress = getClientIp(req);
     const userAgent = req.headers["user-agent"];
 
@@ -182,7 +183,7 @@ export function setupAuth(app: Express) {
     });
   });
 
-  app.post("/api/change-password", async (req, res, next) => {
+  app.post("/api/change-password", passwordChangeRateLimiter, async (req, res, next) => {
     try {
       if (!req.isAuthenticated()) return res.sendStatus(401);
 

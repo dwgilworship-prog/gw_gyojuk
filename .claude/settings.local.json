@@ -15,7 +15,8 @@
       "Bash(stat:*)",
       "Bash(where:*)",
       "Bash(where convert:*)",
-      "Bash(node:*)"
+      "Bash(node:*)",
+      "Bash(timeout 10 npm run dev:*)"
     ]
   }
 }

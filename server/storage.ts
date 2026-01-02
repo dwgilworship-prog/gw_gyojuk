@@ -80,6 +80,9 @@ export interface IStorage {
   createLongAbsenceContact(contact: InsertLongAbsenceContact): Promise<LongAbsenceContact>;
   getStudentLastAttendance(studentId: string): Promise<{ date: string } | undefined>;
 
+  // 배치 쿼리 (N+1 최적화)
+  getStudentsLastAttendanceBatch(studentIds: string[]): Promise<Map<string, string>>;
+
   // Ministry related
   getMinistry(id: string): Promise<Ministry | undefined>;
   getMinistries(): Promise<Ministry[]>;
@@ -435,6 +438,37 @@ export class DatabaseStorage implements IStorage {
       .orderBy(desc(attendanceLogs.date))
       .limit(1);
     return log || undefined;
+  }
+
+  /**
+   * 여러 학생의 마지막 출석일을 한 번의 쿼리로 조회 (N+1 최적화)
+   * @returns Map<studentId, lastAttendanceDate>
+   */
+  async getStudentsLastAttendanceBatch(studentIds: string[]): Promise<Map<string, string>> {
+    if (studentIds.length === 0) return new Map();
+
+    // 서브쿼리로 각 학생별 최신 출석일 조회
+    const result = await db
+      .select({
+        studentId: attendanceLogs.studentId,
+        lastDate: sql<string>`MAX(${attendanceLogs.date})`.as('last_date'),
+      })
+      .from(attendanceLogs)
+      .where(
+        and(
+          sql`${attendanceLogs.studentId} IN (${sql.join(studentIds.map(id => sql`${id}`), sql`, `)})`,
+          sql`${attendanceLogs.status} IN ('ATTENDED', 'LATE')`
+        )
+      )
+      .groupBy(attendanceLogs.studentId);
+
+    const map = new Map<string, string>();
+    for (const row of result) {
+      if (row.lastDate) {
+        map.set(row.studentId, row.lastDate);
+      }
+    }
+    return map;
   }
 
   // Ministry implementation
