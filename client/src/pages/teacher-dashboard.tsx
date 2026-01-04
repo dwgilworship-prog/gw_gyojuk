@@ -706,6 +706,7 @@ export default function TeacherDashboard() {
           handleMemoChange={handleMemoChange}
           handleCopyPhone={handleCopyPhone}
           getStudentMinistries={getStudentMinistries}
+          showToastMessage={showToastMessage}
         />
         <Toast showToast={showToast} toastMessage={toastMessage} />
         <ObservationModal

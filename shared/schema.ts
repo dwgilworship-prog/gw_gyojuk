@@ -169,6 +169,7 @@ export const studentsRelations = relations(students, ({ one, many }) => ({
   history: many(studentHistory),
   longAbsenceContacts: many(longAbsenceContacts),
   observations: many(studentObservations),
+  memos: many(studentMemos),
 }));
 
 export const attendanceLogs = pgTable("attendance_logs", {
@@ -272,6 +273,28 @@ export const studentObservationsRelations = relations(studentObservations, ({ on
   attendanceLog: one(attendanceLogs, {
     fields: [studentObservations.attendanceLogId],
     references: [attendanceLogs.id],
+  }),
+}));
+
+// 학생 메모 테이블
+export const studentMemos = pgTable("student_memos", {
+  id: varchar("id", { length: 36 }).primaryKey().default(sql`gen_random_uuid()`),
+  studentId: varchar("student_id", { length: 36 }).notNull().references(() => students.id, { onDelete: "cascade" }),
+  teacherId: varchar("teacher_id", { length: 36 }).references(() => teachers.id, { onDelete: "set null" }),
+  content: text("content").notNull(),
+  isPinned: boolean("is_pinned").notNull().default(false),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const studentMemosRelations = relations(studentMemos, ({ one }) => ({
+  student: one(students, {
+    fields: [studentMemos.studentId],
+    references: [students.id],
+  }),
+  teacher: one(teachers, {
+    fields: [studentMemos.teacherId],
+    references: [teachers.id],
   }),
 }));
 
@@ -383,6 +406,12 @@ export const insertStudentObservationSchema = createInsertSchema(studentObservat
   updatedAt: true,
 });
 
+export const insertStudentMemoSchema = createInsertSchema(studentMemos).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
 export const insertLoginLogSchema = createInsertSchema(loginLogs).omit({
   id: true,
   createdAt: true,
@@ -419,6 +448,8 @@ export type InsertLongAbsenceContact = z.infer<typeof insertLongAbsenceContactSc
 export type LongAbsenceContact = typeof longAbsenceContacts.$inferSelect;
 export type InsertStudentObservation = z.infer<typeof insertStudentObservationSchema>;
 export type StudentObservation = typeof studentObservations.$inferSelect;
+export type InsertStudentMemo = z.infer<typeof insertStudentMemoSchema>;
+export type StudentMemo = typeof studentMemos.$inferSelect;
 export type InsertLoginLog = z.infer<typeof insertLoginLogSchema>;
 export type LoginLog = typeof loginLogs.$inferSelect;
 export type InsertDataChangeLog = z.infer<typeof insertDataChangeLogSchema>;

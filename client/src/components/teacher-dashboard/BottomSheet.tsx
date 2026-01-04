@@ -1,6 +1,7 @@
 import React from 'react';
 import { styles } from './styles';
 import type { UIStudent } from './types';
+import { MemoList } from '@/components/student-memos';
 
 interface BottomSheetProps {
   selectedStudent: UIStudent | null;
@@ -9,15 +10,16 @@ interface BottomSheetProps {
   handleMemoChange: (id: string, text: string) => void;
   handleCopyPhone: (phone: string) => void;
   getStudentMinistries: (studentId: string) => string[];
+  showToastMessage: (message: string) => void;
 }
 
 export const BottomSheet = ({
   selectedStudent,
   sheetClosing,
   closeSheet,
-  handleMemoChange,
   handleCopyPhone,
   getStudentMinistries,
+  showToastMessage,
 }: BottomSheetProps) => {
   if (!selectedStudent) return null;
 
@@ -161,12 +163,10 @@ export const BottomSheet = ({
 
         {/* 메모 */}
         <div style={styles.sheetMemoWrap}>
-          <label style={styles.sheetMemoLabel}>메모 / 기도제목</label>
-          <textarea
-            style={styles.sheetMemoInput}
-            placeholder="이 학생을 위한 기도제목이나 특이사항을 적어주세요"
-            value={selectedStudent.memo || ''}
-            onChange={(e) => handleMemoChange(selectedStudent.id, e.target.value)}
+          <MemoList
+            studentId={selectedStudent.id}
+            studentName={selectedStudent.name}
+            showToastMessage={showToastMessage}
           />
         </div>
       </div>

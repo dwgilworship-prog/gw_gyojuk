@@ -13,6 +13,7 @@ import reportRoutes from "./report.routes";
 import dashboardRoutes from "./dashboard.routes";
 import adminRoutes from "./admin.routes";
 import healthRoutes from "./health.routes";
+import memoRoutes from "./memo.routes";
 
 export async function registerRoutes(
   httpServer: Server,
@@ -32,6 +33,7 @@ export async function registerRoutes(
   app.use("/api", dashboardRoutes);
   app.use("/api", adminRoutes);
   app.use("/api", healthRoutes);
+  app.use("/api", memoRoutes);
 
   return httpServer;
 }
