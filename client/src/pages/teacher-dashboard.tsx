@@ -335,26 +335,6 @@ export default function TeacherDashboard() {
     setTimeout(() => setShowToast(false), 2500);
   }, []);
 
-  // 메모 debounce를 위한 ref
-  const memoTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-
-  // 메모 저장 mutation
-  const memoMutation = useMutation({
-    mutationFn: async (data: { studentId: string; memo: string }) => {
-      const res = await apiRequest('PATCH', `/api/students/${data.studentId}`, { memo: data.memo });
-      return res.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: ["/api/students", { mokjangIds: myMokjangs?.map(m => m.id) }]
-      });
-      showToastMessage('메모가 저장되었어요');
-    },
-    onError: () => {
-      showToastMessage('메모 저장에 실패했어요');
-    },
-  });
-
   // 특이사항 생성 mutation
   const createObservationMutation = useMutation({
     mutationFn: async (content: string) => {
@@ -558,20 +538,6 @@ export default function TeacherDashboard() {
     showToastMessage('클립보드에 복사했어요');
   }, [filteredStudents, getAttendanceForDate, selectedGroup, selectedDateDisplay, presentCount, absentCount, triggerHaptic, showToastMessage]);
 
-  const handleMemoChange = useCallback((id: string, text: string) => {
-    if (selectedStudent && selectedStudent.id === id) {
-      setSelectedStudent(prev => prev ? { ...prev, memo: text } : null);
-    }
-
-    if (memoTimeoutRef.current) {
-      clearTimeout(memoTimeoutRef.current);
-    }
-
-    memoTimeoutRef.current = setTimeout(() => {
-      memoMutation.mutate({ studentId: id, memo: text });
-    }, 1000);
-  }, [selectedStudent, memoMutation]);
-
   const closeSheet = useCallback(() => {
     setSheetClosing(true);
     setTimeout(() => {
@@ -703,7 +669,6 @@ export default function TeacherDashboard() {
           selectedStudent={selectedStudent}
           sheetClosing={sheetClosing}
           closeSheet={closeSheet}
-          handleMemoChange={handleMemoChange}
           handleCopyPhone={handleCopyPhone}
           getStudentMinistries={getStudentMinistries}
           showToastMessage={showToastMessage}

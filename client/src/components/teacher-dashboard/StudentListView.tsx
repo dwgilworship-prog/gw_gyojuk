@@ -146,9 +146,6 @@ export const StudentListView = ({
                     {student.isWarning && <span style={styles.warnTag}>장기결석</span>}
                   </div>
                   <span style={styles.studentListMeta}>{student.grade} · {student.phone}</span>
-                  {student.memo && (
-                    <p style={styles.studentListMemo}>📝 {student.memo}</p>
-                  )}
                 </div>
               </div>
               <svg width="20" height="20" viewBox="0 0 20 20" fill="none">

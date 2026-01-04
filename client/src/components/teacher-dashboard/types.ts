@@ -11,7 +11,6 @@ export interface UIStudent {
   streak: number;
   lastSeen: string;
   birthday: string;
-  memo: string;
   joinDate: string;
   school: string;
   isWarning: boolean;
@@ -109,7 +108,6 @@ export function convertToUIStudent(
     streak,
     lastSeen,
     birthday,
-    memo: dbStudent.memo || '',
     joinDate,
     school: dbStudent.school || '',
     isWarning,

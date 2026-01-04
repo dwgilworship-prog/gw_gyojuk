@@ -7,7 +7,6 @@ interface BottomSheetProps {
   selectedStudent: UIStudent | null;
   sheetClosing: boolean;
   closeSheet: () => void;
-  handleMemoChange: (id: string, text: string) => void;
   handleCopyPhone: (phone: string) => void;
   getStudentMinistries: (studentId: string) => string[];
   showToastMessage: (message: string) => void;
