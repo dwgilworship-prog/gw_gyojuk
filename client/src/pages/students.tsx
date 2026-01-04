@@ -56,8 +56,9 @@ import { Skeleton } from "@/components/ui/skeleton";
 import {
   Plus, Users, Search, Pencil, Trash2, Phone, User, Droplet, Calendar,
   GraduationCap, Home, ChevronUp, ChevronDown, ChevronsUpDown,
-  LayoutGrid, LayoutList, ChevronLeft, ChevronRight, MoreVertical
+  LayoutGrid, LayoutList, ChevronLeft, ChevronRight, MoreVertical, MessageSquare
 } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -84,6 +85,7 @@ const studentFormSchema = z.object({
   gender: z.enum(["M", "F"]).optional(),
   baptism: z.enum(["none", "infant", "baptized", "confirmed"]).optional(),
   status: z.enum(["ACTIVE", "REST", "GRADUATED"]).default("ACTIVE"),
+  memo: z.string().optional(),
 });
 
 type StudentFormData = z.infer<typeof studentFormSchema>;
@@ -125,6 +127,7 @@ export default function Students() {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [ministryFilter, setMinistryFilter] = useState<string>("all");
   const [absenceFilter, setAbsenceFilter] = useState<string>("all");
+  const [memoFilter, setMemoFilter] = useState<string>("all");
 
   const [sortField, setSortField] = useState<SortField>("name");
   const [sortOrder, setSortOrder] = useState<SortOrder>("asc");
@@ -187,6 +190,7 @@ export default function Students() {
       baptism: "none",
       status: "ACTIVE",
       ministryIds: [],
+      memo: "",
     },
   });
 
@@ -202,6 +206,7 @@ export default function Students() {
         mokjangId: data.mokjangId && data.mokjangId !== "none" ? data.mokjangId : null,
         gender: data.gender || null,
         baptism: data.baptism || "none",
+        memo: data.memo || null,
       };
       const res = await apiRequest("POST", "/api/students", payload);
       const student = await res.json();
@@ -239,6 +244,7 @@ export default function Students() {
         mokjangId: data.mokjangId && data.mokjangId !== "none" ? data.mokjangId : null,
         gender: data.gender || null,
         baptism: data.baptism || "none",
+        memo: data.memo || null,
       };
 
       const res = await apiRequest("PATCH", `/api/students/${id}`, payload);
@@ -337,6 +343,7 @@ export default function Students() {
       baptism: "none",
       status: "ACTIVE",
       ministryIds: [],
+      memo: "",
     });
     setIsFormOpen(true);
   };
@@ -357,6 +364,7 @@ export default function Students() {
       ministryIds: ministryMembers?.students
         ?.filter(ms => ms.studentId === student.id)
         .map(ms => ms.ministryId) || [],
+      memo: student.memo || "",
     });
     setIsFormOpen(true);
   };
@@ -464,7 +472,10 @@ export default function Students() {
         }
       }
 
-      return matchesSearch && matchesGrade && matchesMokjang && matchesStatus && matchesMinistry && matchesAbsence;
+      // 메모(특이사항) 필터
+      const matchesMemo = memoFilter === "all" || (memoFilter === "hasMemo" && student.memo && student.memo.trim() !== "");
+
+      return matchesSearch && matchesGrade && matchesMokjang && matchesStatus && matchesMinistry && matchesAbsence && matchesMemo;
     });
 
     result.sort((a, b) => {
@@ -484,7 +495,7 @@ export default function Students() {
     });
 
     return result;
-  }, [students, searchQuery, gradeFilter, mokjangFilter, statusFilter, ministryFilter, absenceFilter, ministryMembers, longAbsenceMap, sortField, sortOrder, user?.role, myMokjangIds]);
+  }, [students, searchQuery, gradeFilter, mokjangFilter, statusFilter, ministryFilter, absenceFilter, memoFilter, ministryMembers, longAbsenceMap, sortField, sortOrder, user?.role, myMokjangIds]);
 
   const totalPages = Math.ceil(filteredAndSortedStudents.length / pageSize);
   const paginatedStudents = filteredAndSortedStudents.slice(
@@ -621,6 +632,16 @@ export default function Students() {
               </Select>
             )}
 
+            <Select value={memoFilter} onValueChange={(v) => { setMemoFilter(v); setCurrentPage(1); }}>
+              <SelectTrigger className="w-[120px]" data-testid="filter-memo">
+                <SelectValue placeholder="전체" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">전체</SelectItem>
+                <SelectItem value="hasMemo">특이사항 있음</SelectItem>
+              </SelectContent>
+            </Select>
+
             <div className="ml-auto hidden md:flex items-center gap-1">
               <Button
                 size="icon"
@@ -723,7 +744,12 @@ export default function Students() {
                               onClick={() => setViewingStudent(student)}
                               data-testid={`text-student-name-${student.id}`}
                             >
-                              {student.name}
+                              <div className="flex items-center gap-1.5">
+                                {student.name}
+                                {student.memo && student.memo.trim() !== "" && (
+                                  <MessageSquare className="h-3.5 w-3.5 text-amber-500" />
+                                )}
+                              </div>
                             </TableCell>
                             <TableCell onClick={() => setViewingStudent(student)}>
                               {student.grade || "-"}
@@ -816,8 +842,11 @@ export default function Students() {
                           onClick={() => setViewingStudent(student)}
                         >
                           <div className="flex items-center gap-2 mb-1">
-                            <h3 className="font-medium truncate text-base" data-testid={`text-student-name-${student.id}`}>
+                            <h3 className="font-medium truncate text-base flex items-center gap-1.5" data-testid={`text-student-name-${student.id}`}>
                               {student.name}
+                              {student.memo && student.memo.trim() !== "" && (
+                                <MessageSquare className="h-3.5 w-3.5 text-amber-500 flex-shrink-0" />
+                              )}
                             </h3>
                             <Badge variant={statusLabels[student.status].variant} className="text-xs flex-shrink-0">
                               {statusLabels[student.status].label}
@@ -994,11 +1023,11 @@ export default function Students() {
             <CardContent className="flex flex-col items-center justify-center py-12">
               <Users className="h-12 w-12 text-muted-foreground/50 mb-4" />
               <p className="text-muted-foreground text-center">
-                {searchQuery || gradeFilter !== "all" || mokjangFilter !== "all" || statusFilter !== "all" || absenceFilter !== "all"
+                {searchQuery || gradeFilter !== "all" || mokjangFilter !== "all" || statusFilter !== "all" || absenceFilter !== "all" || memoFilter !== "all"
                   ? "검색 결과가 없습니다."
                   : "등록된 학생이 없습니다."}
               </p>
-              {!searchQuery && gradeFilter === "all" && mokjangFilter === "all" && statusFilter === "all" && absenceFilter === "all" && (
+              {!searchQuery && gradeFilter === "all" && mokjangFilter === "all" && statusFilter === "all" && absenceFilter === "all" && memoFilter === "all" && (
                 <p className="text-sm text-muted-foreground text-center">
                   학생 추가 버튼을 눌러 첫 학생을 등록해보세요.
                 </p>
@@ -1242,6 +1271,25 @@ export default function Students() {
                 </div>
               </div>
 
+              <FormField
+                control={form.control}
+                name="memo"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>특이사항 메모</FormLabel>
+                    <FormControl>
+                      <Textarea
+                        placeholder="학생에 대한 특이사항을 입력하세요 (선택)"
+                        className="resize-none"
+                        rows={3}
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
               <DialogFooter>
                 <Button type="button" variant="outline" onClick={handleCloseForm}>
                   취소
@@ -1404,6 +1452,18 @@ export default function Students() {
                   )}
                 </div>
               </div>
+
+              {viewingStudent.memo && (
+                <div className="border-t pt-4 space-y-2">
+                  <h3 className="font-medium text-sm text-muted-foreground flex items-center gap-2">
+                    <MessageSquare className="h-4 w-4" />
+                    특이사항 메모
+                  </h3>
+                  <p className="text-sm whitespace-pre-wrap bg-muted/50 rounded-md p-3">
+                    {viewingStudent.memo}
+                  </p>
+                </div>
+              )}
 
               <DialogFooter className="gap-2">
                 <Button
