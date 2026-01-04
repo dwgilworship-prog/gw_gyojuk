@@ -279,6 +279,188 @@
   white-space: nowrap;
 }
 
+/* ===== 메모 컴포넌트 스타일 ===== */
+.memo-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.memo-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.memo-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #6B7684;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+}
+
+.memo-add-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 12px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #7c3aed;
+  background: #f5f3ff;
+  border: 1px solid #ede9fe;
+  border-radius: 8px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.memo-add-btn:active {
+  background: #ede9fe;
+}
+
+.memo-items {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.memo-empty {
+  font-size: 14px;
+  color: #8B95A1;
+  text-align: center;
+  padding: 16px 0;
+  margin: 0;
+}
+
+.memo-card {
+  padding: 12px;
+  border-radius: 12px;
+  border: 1px solid #E5E8EB;
+  background: #F9FAFB;
+}
+
+.memo-card.pinned {
+  border-color: #fcd34d;
+  background: #fffbeb;
+}
+
+.memo-card-inner {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.memo-card-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.memo-card-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: #6B7684;
+  margin-bottom: 6px;
+}
+
+.memo-card-author {
+  font-weight: 600;
+}
+
+.memo-card-text {
+  font-size: 14px;
+  color: #191F28;
+  white-space: pre-wrap;
+  word-break: break-word;
+  margin: 0;
+}
+
+.memo-menu-btn {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  flex-shrink: 0;
+  color: #8B95A1;
+}
+
+.memo-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.memo-textarea {
+  width: 100%;
+  padding: 12px;
+  font-size: 14px;
+  font-family: inherit;
+  border: 1px solid #E5E8EB;
+  border-radius: 12px;
+  resize: none;
+  outline: none;
+  background: #FFFFFF;
+  color: #191F28;
+  box-sizing: border-box;
+}
+
+.memo-textarea:focus {
+  border-color: #7c3aed;
+}
+
+.memo-textarea::placeholder {
+  color: #8B95A1;
+}
+
+.memo-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.memo-btn-cancel {
+  padding: 8px 16px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #6B7684;
+  background: #F2F4F6;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.memo-btn-cancel:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.memo-btn-submit {
+  padding: 8px 16px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #FFFFFF;
+  background: #7c3aed;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.memo-btn-submit:disabled {
+  background: #D1D6DB;
+  cursor: not-allowed;
+}
+
 /* 저장 버튼 플로팅 */
 .save-btn-fixed {
   position: fixed;

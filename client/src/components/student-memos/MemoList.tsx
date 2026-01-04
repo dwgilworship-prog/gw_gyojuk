@@ -1,8 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Plus, MessageSquare } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -29,7 +27,6 @@ export function MemoList({ studentId, showToastMessage }: MemoListProps) {
   const { user } = useAuth();
   const { toast } = useToast();
 
-  // 커스텀 토스트가 있으면 사용, 없으면 shadcn/ui 토스트 사용
   const notify = (message: string) => {
     if (showToastMessage) {
       showToastMessage(message);
@@ -37,6 +34,7 @@ export function MemoList({ studentId, showToastMessage }: MemoListProps) {
       toast({ title: message });
     }
   };
+
   const [isAdding, setIsAdding] = useState(false);
   const [editingMemo, setEditingMemo] = useState<MemoItemData | null>(null);
   const [deletingMemoId, setDeletingMemoId] = useState<string | null>(null);
@@ -72,41 +70,38 @@ export function MemoList({ studentId, showToastMessage }: MemoListProps) {
     },
   });
 
-  // 현재 사용자가 메모를 수정/삭제할 수 있는지 확인
   const canModifyMemo = (memo: MemoItemData) => {
     if (user?.role === "admin") return true;
-    // teacher는 자기가 작성한 메모만 수정 가능
     return user?.role === "teacher" && user.teacher?.id === memo.teacherId;
-
   };
 
   if (isLoading) {
     return (
-      <div className="space-y-3">
-        <div className="flex items-center justify-between">
-          <h3 className="font-medium text-sm text-muted-foreground flex items-center gap-2">
-            <MessageSquare className="h-4 w-4" />
+      <div className="memo-list">
+        <div className="memo-header">
+          <h3 className="memo-title">
+            <MessageSquare size={16} />
             특이사항 메모
           </h3>
         </div>
-        <Skeleton className="h-20 w-full" />
-        <Skeleton className="h-20 w-full" />
+        <div className="memo-card" style={{ height: 60 }} />
+        <div className="memo-card" style={{ height: 60 }} />
       </div>
     );
   }
 
   return (
-    <div className="space-y-3">
-      <div className="flex items-center justify-between">
-        <h3 className="font-medium text-sm text-muted-foreground flex items-center gap-2">
-          <MessageSquare className="h-4 w-4" />
+    <div className="memo-list">
+      <div className="memo-header">
+        <h3 className="memo-title">
+          <MessageSquare size={16} />
           특이사항 메모 {memos && memos.length > 0 && `(${memos.length})`}
         </h3>
         {!isAdding && !editingMemo && (
-          <Button variant="outline" size="sm" onClick={() => setIsAdding(true)}>
-            <Plus className="h-4 w-4 mr-1" />
+          <button className="memo-add-btn" onClick={() => setIsAdding(true)}>
+            <Plus size={14} />
             메모 추가
-          </Button>
+          </button>
         )}
       </div>
 
@@ -130,7 +125,7 @@ export function MemoList({ studentId, showToastMessage }: MemoListProps) {
       )}
 
       {!isAdding && !editingMemo && (
-        <div className="space-y-2">
+        <div className="memo-items">
           {memos && memos.length > 0 ? (
             memos.map((memo) => (
               <MemoItem
@@ -143,9 +138,7 @@ export function MemoList({ studentId, showToastMessage }: MemoListProps) {
               />
             ))
           ) : (
-            <p className="text-sm text-muted-foreground text-center py-4">
-              등록된 메모가 없습니다.
-            </p>
+            <p className="memo-empty">등록된 메모가 없습니다.</p>
           )}
         </div>
       )}

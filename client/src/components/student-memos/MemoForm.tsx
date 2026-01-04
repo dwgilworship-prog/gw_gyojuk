@@ -1,7 +1,5 @@
 import { useState } from "react";
 import { useMutation } from "@tanstack/react-query";
-import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import type { MemoItemData } from "./MemoItem";
@@ -19,7 +17,6 @@ export function MemoForm({ studentId, existingMemo, onSuccess, onCancel, showToa
   const { toast } = useToast();
   const isEditing = !!existingMemo;
 
-  // 커스텀 토스트가 있으면 사용, 없으면 shadcn/ui 토스트 사용
   const notify = (message: string) => {
     if (showToastMessage) {
       showToastMessage(message);
@@ -70,22 +67,30 @@ export function MemoForm({ studentId, existingMemo, onSuccess, onCancel, showToa
   const isPending = createMutation.isPending || updateMutation.isPending;
 
   return (
-    <div className="space-y-3">
-      <Textarea
+    <div className="memo-form">
+      <textarea
+        className="memo-textarea"
         value={content}
         onChange={(e) => setContent(e.target.value)}
         placeholder="메모를 입력하세요..."
         rows={3}
-        className="resize-none"
         autoFocus
       />
-      <div className="flex justify-end gap-2">
-        <Button variant="outline" size="sm" onClick={onCancel} disabled={isPending}>
+      <div className="memo-form-actions">
+        <button
+          className="memo-btn-cancel"
+          onClick={onCancel}
+          disabled={isPending}
+        >
           취소
-        </Button>
-        <Button size="sm" onClick={handleSubmit} disabled={!content.trim() || isPending}>
+        </button>
+        <button
+          className="memo-btn-submit"
+          onClick={handleSubmit}
+          disabled={!content.trim() || isPending}
+        >
           {isPending ? "저장 중..." : isEditing ? "수정" : "추가"}
-        </Button>
+        </button>
       </div>
     </div>
   );
