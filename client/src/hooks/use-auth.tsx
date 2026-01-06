@@ -107,10 +107,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     },
     onSuccess: (user: UserWithTeacher) => {
       queryClient.setQueryData(["/api/user"], user);
-      toast({
-        title: "비밀번호가 변경되었습니다",
-        description: "새 비밀번호로 로그인하세요.",
-      });
     },
     onError: (error: Error) => {
       toast({

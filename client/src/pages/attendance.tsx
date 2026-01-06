@@ -37,12 +37,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from "@/components/ui/tabs";
 import { UserCheck, CalendarIcon, Check, Clock, X, AlertCircle, Save, Users, FileText, Trash2, ChevronLeft, ChevronRight } from "lucide-react";
 import { format, addWeeks, subWeeks } from "date-fns";
 import { ko } from "date-fns/locale";
@@ -213,6 +207,7 @@ export default function Attendance() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/attendance"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/attendance-dashboard"] });
       toast({ title: "출석이 저장되었습니다." });
     },
     onError: () => {

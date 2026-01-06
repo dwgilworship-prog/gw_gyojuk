@@ -145,4 +145,33 @@ router.get("/teachers/:id/mokjangs", requireAuth, async (req, res) => {
   res.json(mokjangs);
 });
 
+// POST /api/teachers/:id/reset-password - 비밀번호 초기화 (관리자 전용)
+router.post("/teachers/:id/reset-password", requireAdmin, async (req, res) => {
+  const adminUser = req.user!;
+
+  const teacher = await storage.getTeacher(req.params.id);
+  if (!teacher) return res.status(404).json({ message: "교사를 찾을 수 없습니다." });
+  if (!teacher.userId) return res.status(400).json({ message: "연결된 사용자 계정이 없습니다." });
+
+  const defaultPassword = "shepherd1234";
+  const hashedPassword = await hashPassword(defaultPassword);
+
+  const updated = await storage.updateUser(teacher.userId, {
+    password: hashedPassword,
+    mustChangePassword: true,
+  });
+  if (!updated) return res.status(500).json({ message: "비밀번호 초기화에 실패했습니다." });
+
+  await logDataChange({
+    userId: adminUser.id,
+    action: "update",
+    targetType: "teacher",
+    targetId: teacher.id,
+    targetName: teacher.name,
+    changes: { passwordReset: { old: null, new: true } },
+  });
+
+  res.json({ message: "비밀번호가 초기화되었습니다.", defaultPassword });
+});
+
 export default router;

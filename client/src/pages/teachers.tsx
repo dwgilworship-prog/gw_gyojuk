@@ -49,7 +49,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Plus, UserCog, Search, Pencil, Trash2, Phone, Calendar, Crown, Cake, Mail,
-  LayoutGrid, LayoutList, MoreVertical, Users, CheckCircle2
+  LayoutGrid, LayoutList, MoreVertical, Users, CheckCircle2, KeyRound
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -92,6 +92,7 @@ export default function Teachers() {
   const [editingTeacher, setEditingTeacher] = useState<Teacher | null>(null);
   const [deletingTeacher, setDeletingTeacher] = useState<Teacher | null>(null);
   const [viewingTeacher, setViewingTeacher] = useState<Teacher | null>(null);
+  const [resettingPasswordTeacher, setResettingPasswordTeacher] = useState<Teacher | null>(null);
 
   const [roleFilter, setRoleFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -241,6 +242,22 @@ export default function Teachers() {
     },
     onError: () => {
       toast({ title: "승인 실패", description: "다시 시도해주세요.", variant: "destructive" });
+    },
+  });
+
+  const resetPasswordMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const res = await apiRequest("POST", `/api/teachers/${id}/reset-password`);
+      return res.json();
+    },
+    onSuccess: (data) => {
+      toast({
+        title: "비밀번호가 초기화되었습니다.",
+        description: `임시 비밀번호: ${data.defaultPassword}`,
+      });
+    },
+    onError: () => {
+      toast({ title: "비밀번호 초기화 실패", description: "다시 시도해주세요.", variant: "destructive" });
     },
   });
 
@@ -866,6 +883,33 @@ export default function Teachers() {
         </AlertDialogContent>
       </AlertDialog>
 
+      <AlertDialog open={!!resettingPasswordTeacher} onOpenChange={() => setResettingPasswordTeacher(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>비밀번호 초기화</AlertDialogTitle>
+            <AlertDialogDescription>
+              "{resettingPasswordTeacher?.name}" 교사의 비밀번호를 초기화하시겠습니까?
+              <br />
+              비밀번호가 기본값(shepherd1234)으로 변경됩니다.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>취소</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (resettingPasswordTeacher) {
+                  resetPasswordMutation.mutate(resettingPasswordTeacher.id);
+                  setResettingPasswordTeacher(null);
+                }
+              }}
+              data-testid="button-confirm-reset-password"
+            >
+              {resetPasswordMutation.isPending ? "초기화 중..." : "초기화"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       <Dialog open={!!viewingTeacher} onOpenChange={() => setViewingTeacher(null)}>
         <DialogContent className="max-w-md" data-testid="dialog-teacher-detail">
           <DialogHeader>
@@ -944,17 +988,27 @@ export default function Teachers() {
 
               <DialogFooter className="gap-2">
                 {user?.role === "admin" && (
-                  <Button
-                    variant="outline"
-                    onClick={() => {
-                      setViewingTeacher(null);
-                      handleOpenEdit(viewingTeacher);
-                    }}
-                    data-testid="button-edit-from-detail"
-                  >
-                    <Pencil className="h-4 w-4 mr-2" />
-                    수정
-                  </Button>
+                  <>
+                    <Button
+                      variant="outline"
+                      onClick={() => setResettingPasswordTeacher(viewingTeacher)}
+                      data-testid="button-reset-password"
+                    >
+                      <KeyRound className="h-4 w-4 mr-2" />
+                      비밀번호 초기화
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        setViewingTeacher(null);
+                        handleOpenEdit(viewingTeacher);
+                      }}
+                      data-testid="button-edit-from-detail"
+                    >
+                      <Pencil className="h-4 w-4 mr-2" />
+                      수정
+                    </Button>
+                  </>
                 )}
                 <Button onClick={() => setViewingTeacher(null)}>
                   닫기
