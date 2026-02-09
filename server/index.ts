@@ -61,35 +61,46 @@ app.use((req, res, next) => {
   next();
 });
 
+// 포트를 먼저 바인딩하여 Render의 health check 타임아웃 방지
+const port = parseInt(process.env.PORT || "5000", 10);
+httpServer.listen(port, "0.0.0.0", () => {
+  log(`serving on port ${port}`);
+});
+
+// DB 연결이 필요한 초기화는 포트 바인딩 이후 비동기로 실행
 (async () => {
-  // Register routes and start server
-  await registerRoutes(httpServer, app);
-  await seedDatabase();
+  try {
+    const startTime = Date.now();
 
-  app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
-    const status = err.status || err.statusCode || 500;
-    const message = err.message || "Internal Server Error";
+    // Register routes (includes auth setup with session store)
+    await registerRoutes(httpServer, app);
+    log(`Routes registered in ${Date.now() - startTime}ms`, "boot");
 
-    res.status(status).json({ message });
-    throw err;
-  });
+    // Seed database
+    await seedDatabase();
+    log(`Database seeded in ${Date.now() - startTime}ms`, "boot");
 
-  // importantly only setup vite in development and after
-  // setting up all the other routes so the catch-all route
-  // doesn't interfere with the other routes
-  if (process.env.NODE_ENV === "production") {
-    serveStatic(app);
-  } else {
-    const { setupVite } = await import("./vite");
-    await setupVite(httpServer, app);
+    app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
+      const status = err.status || err.statusCode || 500;
+      const message = err.message || "Internal Server Error";
+
+      res.status(status).json({ message });
+      throw err;
+    });
+
+    // importantly only setup vite in development and after
+    // setting up all the other routes so the catch-all route
+    // doesn't interfere with the other routes
+    if (process.env.NODE_ENV === "production") {
+      serveStatic(app);
+    } else {
+      const { setupVite } = await import("./vite");
+      await setupVite(httpServer, app);
+    }
+
+    log(`Server fully ready in ${Date.now() - startTime}ms`, "boot");
+  } catch (err) {
+    log(`Boot failed: ${err}`, "boot");
+    process.exit(1);
   }
-
-  // ALWAYS serve the app on the port specified in the environment variable PORT
-  // Other ports are firewalled. Default to 5000 if not specified.
-  // this serves both the API and the client.
-  // It is the only port that is not firewalled.
-  const port = parseInt(process.env.PORT || "5000", 10);
-  httpServer.listen(port, "0.0.0.0", () => {
-    log(`serving on port ${port}`);
-  });
 })();
