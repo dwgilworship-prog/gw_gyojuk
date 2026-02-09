@@ -1,8 +1,9 @@
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { DashboardLayout } from "@/components/dashboard-layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Users, BookOpen, UserCog, UserCheck, AlertTriangle, Cake, UserX, ChevronRight } from "lucide-react";
+import { Users, BookOpen, UserCog, UserCheck, AlertTriangle, Cake, UserX, ChevronRight, ChevronDown } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Link } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
@@ -45,6 +46,7 @@ interface DashboardWidgets {
 export default function Dashboard() {
   const { user } = useAuth();
   const isAdmin = user?.role === "admin";
+  const [isBirthdayExpanded, setIsBirthdayExpanded] = useState(false);
 
   const { data: stats, isLoading } = useQuery<Stats>({
     queryKey: ["/api/stats"],
@@ -213,8 +215,39 @@ export default function Dashboard() {
                   </div>
                 ) : widgets?.birthdays && widgets.birthdays.length > 0 ? (
                   <div className="space-y-1 md:space-y-2">
-                    <div className="md:hidden text-xl font-bold text-pink-500">
-                      {widgets.birthdays.length}<span className="text-xs font-normal text-muted-foreground ml-1">명</span>
+                    <div className="md:hidden">
+                      <div className="text-xl font-bold text-pink-500">
+                        {widgets.birthdays.length}<span className="text-xs font-normal text-muted-foreground ml-1">명</span>
+                      </div>
+                      <div className="mt-1 space-y-0.5">
+                        {(isBirthdayExpanded ? widgets.birthdays : widgets.birthdays.slice(0, 3)).map((item: any) => {
+                          const name = item.name || item.student?.name;
+                          const birth = item.birth || item.student?.birth;
+                          const getThisYearBirthday = (birthStr: string) => {
+                            const birthDate = new Date(birthStr);
+                            return new Date(new Date().getFullYear(), birthDate.getMonth(), birthDate.getDate());
+                          };
+                          const info = item.info || (item.student ? (item.student.grade ? `(${item.student.grade})` : "") : "");
+                          return (
+                            <div key={item.id || item.student?.id} className="text-xs flex items-center gap-1 text-muted-foreground">
+                              <span className="text-pink-500 font-medium">
+                                {birth ? format(getThisYearBirthday(birth), "M/d", { locale: ko }) : ""}
+                              </span>
+                              <span className="truncate">{name}</span>
+                              {info && <span className="text-muted-foreground">({info})</span>}
+                            </div>
+                          );
+                        })}
+                      </div>
+                      {widgets.birthdays.length > 3 && (
+                        <button
+                          onClick={() => setIsBirthdayExpanded(!isBirthdayExpanded)}
+                          className="mt-1 text-xs text-pink-500 font-medium flex items-center gap-0.5"
+                        >
+                          {isBirthdayExpanded ? "접기" : `+${widgets.birthdays.length - 3}명 더보기`}
+                          <ChevronDown className={`h-3 w-3 transition-transform ${isBirthdayExpanded ? "rotate-180" : ""}`} />
+                        </button>
+                      )}
                     </div>
                     <div className="hidden md:block space-y-2">
                       {widgets.birthdays.map((item: any) => {
